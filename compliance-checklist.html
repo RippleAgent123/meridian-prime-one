@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Compliance Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #060606;
+    --off-black: #0e0e0e;
+    --surface: #131313;
+    --border: #1c1c1c;
+    --border-light: #242424;
+    --white: #f8f8f6;
+    --off-white: #e8e8e4;
+    --muted: #4a4a4a;
+    --dim: #2a2a2a;
+    --warn: #7a5030;
+    --warn-text: #c08050;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--black);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 24px 64px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,6,6,0.94);
+    backdrop-filter: blur(20px);
+  }
+  .nav-logo { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.3em; color: var(--white); }
+  .nav-tag  { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); }
+
+  .page-wrapper { padding: 120px 64px 80px; max-width: 860px; margin: 0 auto; }
+
+  .page-header { margin-bottom: 48px; }
+  .page-eyebrow { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.3em; color: var(--muted); margin-bottom: 16px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; color: var(--white); margin-bottom: 8px; }
+  .legal-note {
+    font-size: 11px; color: var(--muted); line-height: 1.5;
+    padding: 12px 16px; border: 1px solid var(--border-light);
+    background: rgba(255,255,255,0.01); margin-top: 20px;
+  }
+
+  /* INPUT AREA */
+  .input-section { margin-bottom: 48px; display: flex; flex-direction: column; gap: 16px; }
+
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
+
+  input[type="text"], select {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input[type="text"]:focus, select:focus { border-color: var(--off-white); }
+  input::placeholder { color: var(--muted); opacity: 0.5; }
+  select { appearance: none; cursor: pointer; }
+  select option { background: var(--surface); }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .btn-generate {
+    background: var(--off-white); color: var(--black);
+    border: none; padding: 16px 36px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; transition: opacity 0.2s;
+    align-self: flex-start;
+  }
+  .btn-generate:hover { opacity: 0.85; }
+
+  /* CHECKLIST OUTPUT */
+  .checklist-output { display: none; }
+  .checklist-output.visible { display: block; }
+
+  .checklist-header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .checklist-address { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: var(--white); margin-bottom: 6px; }
+  .checklist-meta { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); }
+
+  /* SECTION */
+  .cl-section { margin-bottom: 36px; }
+  .cl-section-title {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .cl-items { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); }
+
+  /* ITEM ROW */
+  .cl-item {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 12px;
+    align-items: start;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-item:hover { background: rgba(255,255,255,0.02); }
+  .cl-item.checked { opacity: 0.45; }
+
+  .cl-checkbox {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border-light);
+    flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s;
+  }
+  .cl-item.checked .cl-checkbox { border-color: var(--off-white); background: rgba(248,248,246,0.08); }
+  .cl-checkmark { font-size: 10px; color: var(--off-white); display: none; }
+  .cl-item.checked .cl-checkmark { display: block; }
+
+  .cl-item-text { font-size: 13px; color: var(--off-white); line-height: 1.5; }
+  .cl-item.checked .cl-item-text { color: var(--muted); text-decoration: line-through; }
+
+  /* FLAGS */
+  .cl-flag {
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; padding: 3px 8px;
+    border: 1px solid; white-space: nowrap;
+    align-self: start;
+  }
+  .cl-flag.required  { border-color: var(--warn); color: var(--warn-text); }
+  .cl-flag.warning   { border-color: #5a4020; color: #c09060; }
+  .cl-flag.info      { border-color: var(--border-light); color: var(--muted); }
+
+  .warn-block {
+    background: rgba(122,80,48,0.08);
+    border: 1px solid var(--warn);
+    padding: 14px 18px; margin-bottom: 24px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .warn-icon { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--warn-text); flex-shrink: 0; }
+  .warn-text { font-size: 12px; color: var(--warn-text); line-height: 1.6; }
+
+  .btn-reset { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); background: none; border: none; cursor: pointer; margin-top: 32px; padding: 0; }
+  .btn-reset:hover { color: var(--off-white); }
+
+  @media (max-width: 640px) {
+    nav { padding: 20px 24px; }
+    .page-wrapper { padding: 100px 24px 60px; }
+    .input-row { grid-template-columns: 1fr; }
+    .cl-item { grid-template-columns: 28px 1fr; }
+    .cl-flag { display: none; }
+  }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-tag">COMPLIANCE CHECKLIST</span>
+</nav>
+
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <p class="page-eyebrow">Due Diligence Tool</p>
+    <h1 class="page-title">Compliance Checklist</h1>
+    <div class="legal-note">
+      This checklist is provided as a practical reference tool, not legal advice. Requirements change. Always verify with the municipality and your managing broker before closing.
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-section">
+    <div class="input-row">
+      <div class="field">
+        <label for="prop-address">Property Address</label>
+        <input type="text" id="prop-address" placeholder="8812 Oak Ave">
+      </div>
+      <div class="field">
+        <label for="prop-municipality">Municipality</label>
+        <select id="prop-municipality">
+          <option value="">Select municipality</option>
+          <option value="berwyn">Berwyn</option>
+          <option value="cicero">Cicero</option>
+          <option value="chicago">Chicago</option>
+          <option value="oak_park">Oak Park</option>
+        </select>
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="field">
+        <label for="prop-type">Property Type</label>
+        <select id="prop-type">
+          <option value="">Select type</option>
+          <option value="sfr">Single Family Residence</option>
+          <option value="condo">Condominium</option>
+          <option value="2flat">2-Flat</option>
+          <option value="3flat">3-Flat</option>
+          <option value="4flat">4-Flat</option>
+          <option value="multiunit">5+ Unit (Commercial)</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn-generate" onclick="generateChecklist()">Generate Checklist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="checklist-output" id="checklist-output">
+    <div class="checklist-header">
+      <p class="checklist-address" id="cl-address-display"></p>
+      <p class="checklist-meta" id="cl-meta-display"></p>
+    </div>
+    <div id="cl-warnings"></div>
+    <div id="cl-content"></div>
+    <button class="btn-reset" onclick="resetForm()">← Start Over</button>
+  </div>
+
+</div>
+
+<script>
+// ── Checklist data by municipality ─────────────────────────────────────────
+const CHECKLISTS = {
+  berwyn: {
+    name: 'Berwyn',
+    warnings: [
+      { text: 'Berwyn requires a Point of Sale Inspection before transfer. Schedule through the Community Development Department (708-788-2660). Allow 10–15 business days.', type: 'required' },
+    ],
+    sections: [
+      {
+        title: 'Required Inspections',
+        items: [
+          { text: 'Point of Sale (POS) Inspection — City of Berwyn required', flag: 'required' },
+          { text: 'Smoke detector and CO detector compliance inspection', flag: 'required' },
+          { text: 'Water heater and furnace permit verification', flag: 'info' },
+        ]
+      },
+      {
+        title: 'Required Disclosures',
+        items: [
+          { text: 'Illinois Residential Real Property Disclosure Report', flag: 'required' },
+          { text: 'Lead-based paint disclosure (pre-1978 properties)', flag: 'required' },
+          { text: 'Radon disclosure (provide EPA pamphlet)', flag: 'required' },
+          { text: 'Attorney review notice (5-day right)', flag: 'info' },
+        ]
+      },
+      {
+        title: 'Transfer & Title',
+        items: [
+          { text: 'Obtain water/sewer payoff letter from City', flag: 'required' },
+          { text: 'Confirm no outstanding building code violations', flag: 'info' },
+          { text: 'Real Estate Transfer Tax stamps (seller responsibility)', flag: 'required' },
+          { text: 'Verify zoning compliance with current use', flag: 'info' },
+        ]
+      },
+    ]
+  },
+
+  cicero: {
+    name: 'Cicero',
+    warnings: [
+      { text: 'Cicero requires a Property Transfer Inspection. Contact the Building Department (708-656-3600 ext. 285). Fees vary by unit count. Certificate of Compliance must be issued before closing.', type: 'required' },
+    ],
+    sections: [
+      {
+        title: 'Required Inspections',
+        items: [
+          { text: 'Property Transfer Inspection — Town of Cicero Certificate of Compliance', flag: 'required' },
+          { text: 'Smoke and CO detector compliance', flag: 'required' },
+          { text: 'Electrical panel inspection (if flagged)', flag: 'warning' },
+          { text: 'Sewer scope inspection (recommended for older stock)', flag: 'warning' },
+        ]
+      },
+      {
+        title: 'Required Disclosures',
+        items: [
+          { text: 'Illinois Residential Real Property Disclosure Report', flag: 'required' },
+          { text: 'Lead-based paint disclosure (pre-1978 properties)', flag: 'required' },
+          { text: 'Radon disclosure (provide EPA pamphlet)', flag: 'required' },
+        ]
+      },
+      {
+        title: 'Transfer & Title',
+        items: [
+          { text: 'Water/sewer account balance letter — obtain from Cicero Water Dept', flag: 'required' },
+          { text: 'Certificate of Compliance from Building Department', flag: 'required' },
+          { text: 'Cicero Real Estate Transfer Tax', flag: 'required' },
+          { text: 'Verify no open permits or violations', flag: 'info' },
+        ]
+      },
+    ]
+  },
+
+  chicago: {
+    name: 'Chicago',
+    warnings: [
+      { text: 'Chicago does not require a city-issued Point of Sale inspection for standard 1–4 unit residential sales, but zoning and permit history should be verified. Non-conforming units carry significant risk.', type: 'info' },
+    ],
+    sections: [
+      {
+        title: 'Required Inspections',
+        items: [
+          { text: 'Smoke and CO detector compliance (city ordinance)', flag: 'required' },
+          { text: 'Verify no open building permits or code violations via Chicago Building Permit portal', flag: 'required' },
+          { text: 'General home inspection (strongly recommended)', flag: 'warning' },
+          { text: 'Radon testing (especially basement units)', flag: 'warning' },
+        ]
+      },
+      {
+        title: 'Required Disclosures',
+        items: [
+          { text: 'Illinois Residential Real Property Disclosure Report', flag: 'required' },
+          { text: 'Lead-based paint disclosure (pre-1978)', flag: 'required' },
+          { text: 'Radon disclosure (provide EPA pamphlet)', flag: 'required' },
+          { text: 'Chicago Residential Landlord and Tenant Ordinance notice (if tenant-occupied)', flag: 'required' },
+          { text: 'Condo resale package (condos only) — 22.1 disclosure', flag: 'info' },
+        ]
+      },
+      {
+        title: 'Zoning & Non-Conforming',
+        items: [
+          { text: 'Confirm zoning allows current use via Chicago Zoning Map (zoning.chicago.gov)', flag: 'required' },
+          { text: 'Flag any non-conforming units — cannot be rebuilt if >75% destroyed', flag: 'warning' },
+          { text: 'Verify certificate of occupancy for any additions or conversions', flag: 'info' },
+        ]
+      },
+      {
+        title: 'Transfer & Title',
+        items: [
+          { text: 'City of Chicago Real Estate Transfer Tax (buyer pays $7.50/$1000)', flag: 'required' },
+          { text: 'State transfer tax stamps', flag: 'required' },
+          { text: 'Chicago water certification or final bill', flag: 'required' },
+          { text: 'Confirm HOA paid-up status (if applicable)', flag: 'info' },
+        ]
+      },
+    ]
+  },
+
+  oak_park: {
+    name: 'Oak Park',
+    warnings: [
+      { text: 'Oak Park requires a Point of Sale Inspection. Contact Building & Property Standards (708-358-5430). The Village issues a Certificate of Compliance. Budget 2–3 weeks for scheduling.', type: 'required' },
+    ],
+    sections: [
+      {
+        title: 'Required Inspections',
+        items: [
+          { text: 'Oak Park Point of Sale Inspection — Certificate of Compliance required', flag: 'required' },
+          { text: 'Smoke detector and CO detector compliance', flag: 'required' },
+          { text: 'Sewer lateral inspection (Village requirement for some property types)', flag: 'warning' },
+          { text: 'ENERGY STAR compliance check if any HVAC work was unpermitted', flag: 'info' },
+        ]
+      },
+      {
+        title: 'Required Disclosures',
+        items: [
+          { text: 'Illinois Residential Real Property Disclosure Report', flag: 'required' },
+          { text: 'Lead-based paint disclosure (pre-1978)', flag: 'required' },
+          { text: 'Radon disclosure (provide EPA pamphlet)', flag: 'required' },
+          { text: 'Landmark district disclosure (if property is in a historic district)', flag: 'warning' },
+        ]
+      },
+      {
+        title: 'Transfer & Title',
+        items: [
+          { text: 'Village of Oak Park transfer tax ($5/$1000, seller)', flag: 'required' },
+          { text: 'Certificate of Compliance from Village', flag: 'required' },
+          { text: 'Water/sewer final bill or payoff letter', flag: 'required' },
+          { text: 'Confirm no open permits or violations via Oak Park permit portal', flag: 'info' },
+        ]
+      },
+    ]
+  },
+};
+
+// Multi-unit flags appended when applicable
+const MULTIUNIT_FLAGS = {
+  '2flat': [
+    { text: 'Confirm 2-flat zoning compliance — verify R2/RM zoning', flag: 'warning' },
+    { text: 'Both units require separate smoke/CO detector compliance', flag: 'required' },
+    { text: 'Illinois Residential Landlord disclosure if tenant-occupied', flag: 'required' },
+  ],
+  '3flat': [
+    { text: 'Confirm 3-flat zoning — many municipalities restrict this density', flag: 'warning' },
+    { text: 'All units require smoke/CO detector compliance', flag: 'required' },
+    { text: 'Check for non-conforming use status (rebuilt restriction applies)', flag: 'warning' },
+    { text: 'Illinois Residential Landlord disclosure for all occupied units', flag: 'required' },
+  ],
+  '4flat': [
+    { text: 'Confirm zoning allows 4-unit residential', flag: 'warning' },
+    { text: 'All units require smoke/CO detector compliance', flag: 'required' },
+    { text: 'Non-conforming unit risk — flag for buyer', flag: 'warning' },
+    { text: 'Illinois Residential Landlord disclosure for all occupied units', flag: 'required' },
+  ],
+};
+
+// ── Generate ───────────────────────────────────────────────────────────────
+function generateChecklist() {
+  const address  = document.getElementById('prop-address').value.trim();
+  const muni     = document.getElementById('prop-municipality').value;
+  const propType = document.getElementById('prop-type').value;
+
+  if (!muni || !propType) {
+    alert('Please select a municipality and property type.');
+    return;
+  }
+
+  const data = CHECKLISTS[muni];
+  const displayAddress = address || 'Subject Property';
+  const propTypeLabels = {
+    sfr: 'Single Family Residence', condo: 'Condominium',
+    '2flat': '2-Flat', '3flat': '3-Flat', '4flat': '4-Flat', multiunit: '5+ Unit'
+  };
+
+  document.getElementById('cl-address-display').textContent = displayAddress;
+  document.getElementById('cl-meta-display').textContent =
+    `${data.name} · ${propTypeLabels[propType]} · Generated ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}`;
+
+  // Warnings
+  const warnEl = document.getElementById('cl-warnings');
+  warnEl.innerHTML = data.warnings.map(w => `
+    <div class="warn-block">
+      <span class="warn-icon">!</span>
+      <span class="warn-text">${w.text}</span>
+    </div>
+  `).join('');
+
+  // Sections — merge multi-unit flags if applicable
+  let sections = JSON.parse(JSON.stringify(data.sections)); // deep clone
+  if (MULTIUNIT_FLAGS[propType]) {
+    sections.push({ title: 'Multi-Unit Requirements', items: MULTIUNIT_FLAGS[propType] });
+  }
+
+  const contentEl = document.getElementById('cl-content');
+  const disclaimerHTML = `<div style="background:rgba(192,120,64,0.08);border:1px solid rgba(192,120,64,0.3);padding:16px 20px;margin-bottom:28px;display:flex;gap:12px;align-items:flex-start;">
+  <span style="font-family:'Space Mono',monospace;font-size:11px;color:#C07840;flex-shrink:0;margin-top:1px;">⚠</span>
+  <div style="font-size:12px;color:#C07840;line-height:1.7;">
+    <strong>All items require verification with the local municipality before closing.</strong> Requirements, fees, and contact information on this checklist are based on general knowledge and may be outdated or incorrect. Meridian does not guarantee accuracy. Always confirm directly with the municipality's Building/Community Development department and your managing broker before relying on this data for any transaction.
+  </div>
+</div>`;
+  contentEl.innerHTML = disclaimerHTML + sections.map((section, si) => `
+    <div class="cl-section">
+      <p class="cl-section-title">${section.title}</p>
+      <div class="cl-items">
+        ${section.items.map((item, ii) => `
+          <div class="cl-item" id="item-${si}-${ii}" onclick="toggleItem('item-${si}-${ii}')">
+            <div class="cl-checkbox"><span class="cl-checkmark">✓</span></div>
+            <span class="cl-item-text">${item.text}<span style="display:block;font-size:10px;color:var(--muted);margin-top:5px;font-style:italic;">Verify with your managing broker before proceeding.</span></span>
+            ${item.flag ? `<span class="cl-flag ${item.flag}">${item.flag.toUpperCase()}</span>` : '<span></span>'}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('checklist-output').classList.add('visible');
+  document.getElementById('checklist-output').scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleItem(id) {
+  document.getElementById(id).classList.toggle('checked');
+}
+
+function resetForm() {
+  document.getElementById('prop-address').value = '';
+  document.getElementById('prop-municipality').value = '';
+  document.getElementById('prop-type').value = '';
+  document.getElementById('checklist-output').classList.remove('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>

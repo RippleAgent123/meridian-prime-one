@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Client Communication Templates</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root { --black:#060606;--off-black:#0e0e0e;--surface:#131313;--border:#1c1c1c;--border-light:#242424;--white:#f8f8f6;--off-white:#e8e8e4;--muted:#4a4a4a;--dim:#2a2a2a; }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { background:var(--black);color:var(--off-white);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh; }
+  body::after { content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999; }
+
+  nav { position:fixed;top:0;left:0;right:0;z-index:100;padding:24px 64px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.94);backdrop-filter:blur(20px); }
+  .nav-logo { font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.3em;color:var(--white); }
+  .nav-tag  { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted); }
+
+  .page-wrapper { padding:120px 64px 80px;max-width:1060px;margin:0 auto; }
+  .page-header { margin-bottom:48px; }
+  .page-eyebrow { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--muted);margin-bottom:16px; }
+  .page-title { font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;color:var(--white);margin-bottom:6px; }
+  .page-sub { font-size:12px;color:var(--muted);line-height:1.6; }
+
+  /* PERSONALIZATION ROW */
+  .personalize-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:40px;padding:20px;border:1px solid var(--border);background:var(--off-black); }
+  .p-field { display:flex;flex-direction:column;gap:6px; }
+  label { font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase; }
+  input[type=text],select { background:var(--surface);border:1px solid var(--border-light);color:var(--off-white);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;padding:11px 14px;outline:none;transition:border-color 0.2s;width:100%; }
+  input:focus,select:focus { border-color:var(--off-white); }
+  input::placeholder { color:var(--muted);opacity:0.5; }
+  select { appearance:none;cursor:pointer; }
+
+  /* TEMPLATE GRID */
+  .template-grid { display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border); }
+  .template-card { background:var(--off-black);padding:28px;display:flex;flex-direction:column;gap:0; }
+  .t-label { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);margin-bottom:10px; }
+  .t-subject { font-size:14px;color:var(--white);margin-bottom:12px;font-weight:300; }
+  .t-preview { font-size:12px;color:var(--muted);line-height:1.6;flex:1;margin-bottom:16px; }
+  .t-actions { display:flex;gap:10px; }
+  .btn-view { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.15em;padding:8px 14px;border:1px solid var(--border-light);color:var(--muted);background:none;cursor:pointer;transition:all 0.15s; }
+  .btn-view:hover { border-color:var(--off-white);color:var(--off-white); }
+  .btn-copy-t { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.15em;padding:8px 14px;border:none;color:var(--black);background:var(--off-white);cursor:pointer;transition:opacity 0.15s; }
+  .btn-copy-t:hover { opacity:0.85; }
+
+  /* MODAL */
+  .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;align-items:center;justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--off-black);border:1px solid var(--border-light);width:90%;max-width:680px;max-height:80vh;overflow-y:auto; }
+  .modal-header { display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--off-black); }
+  .modal-subject { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted); }
+  .btn-close { font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer; }
+  .btn-close:hover { color:var(--off-white); }
+  .modal-body { padding:28px; }
+  .modal-text { font-size:13px;line-height:1.9;color:var(--off-white);white-space:pre-wrap; }
+  .modal-footer { padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end; }
+  .btn-copy-modal { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;padding:10px 20px;background:var(--off-white);color:var(--black);border:none;cursor:pointer; }
+
+  @media (max-width:720px) { nav{padding:20px 24px;} .page-wrapper{padding:100px 24px 60px;} .template-grid{grid-template-columns:1fr;} .personalize-row{grid-template-columns:1fr;} }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-tag">CLIENT COMMS</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <p class="page-eyebrow">Communication Templates</p>
+    <h1 class="page-title">Client Communications</h1>
+    <p class="page-sub">Pre-built for every critical moment. Personalized to your communication style and the client's name.</p>
+  </div>
+
+  <!-- PERSONALIZATION -->
+  <div class="personalize-row">
+    <div class="p-field">
+      <label>Client First Name</label>
+      <input type="text" id="client-name" placeholder="Sarah" oninput="refreshPreviews()">
+    </div>
+    <div class="p-field">
+      <label>Property Address</label>
+      <input type="text" id="prop-ref" placeholder="8812 Oak Ave" oninput="refreshPreviews()">
+    </div>
+    <div class="p-field">
+      <label>Communication Style</label>
+      <select id="style-override" onchange="refreshPreviews()">
+        <option value="">From profile</option>
+        <option value="formal">Formal</option>
+        <option value="casual">Casual</option>
+        <option value="direct">Direct</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TEMPLATE GRID -->
+  <div class="template-grid" id="template-grid"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-subject" id="modal-subject"></span>
+      <button class="btn-close" onclick="closeModal()">CLOSE</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-text" id="modal-text"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-copy-modal" onclick="copyModal()">COPY EMAIL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Template definitions ──────────────────────────────────────────────────────
+const TEMPLATES = [
+  {
+    id: 'offer-accepted',
+    label: 'OFFER ACCEPTED',
+    subject: (c, p) => `Great news, ${c} — your offer was accepted`,
+    body: {
+      formal: (c, p, a) => `Dear ${c},\n\nI am pleased to inform you that your offer on ${p} has been accepted by the seller. Congratulations — this is an important milestone.\n\nHere is what happens next:\n\n1. Attorney review begins — your attorney has 5 business days to review and modify the contract.\n2. Inspection period — we need to schedule your home inspection within the next 7 days.\n3. Lender notification — please inform ${a} so they can begin the formal loan process.\n\nI will be in close contact to guide you through each step. Please do not hesitate to reach out with any questions.\n\nSincerely,\n${a}`,
+      casual: (c, p, a) => `Hey ${c}!\n\nWe're under contract! Your offer on ${p} was just accepted — this is exciting news.\n\nNext steps:\n· Schedule your inspection ASAP (let's aim for this week)\n· Give your lender a heads up so they can start the loan process\n· Attorney review kicks off — 5 business days\n\nI'll be with you every step of the way. Feel free to text or call anytime!\n\n${a}`,
+      direct: (c, p, a) => `${c},\n\nOffer accepted on ${p}. Here's what's due next:\n\n· Inspection: schedule within 7 days\n· Attorney review: 5 business day window starts now\n· Lender: notify them immediately to begin loan process\n\nI'll send a full timeline tomorrow. Questions, call me.\n\n${a}`,
+    }
+  },
+  {
+    id: 'offer-rejected',
+    label: 'OFFER REJECTED',
+    subject: (c, p) => `Update on ${p} — next steps`,
+    body: {
+      formal: (c, p, a) => `Dear ${c},\n\nI wanted to update you promptly: the seller has declined our offer on ${p}.\n\nWhile this is disappointing news, it is a common part of the process and I want to make sure we use this as an opportunity to refine our strategy.\n\nI would like to schedule a call to review what we know about the seller's expectations and discuss our options — including whether to resubmit a revised offer, pivot to other properties, or wait for this listing to reduce.\n\nI remain committed to finding you the right property.\n\nSincerely,\n${a}`,
+      casual: (c, p, a) => `Hey ${c},\n\nNot the news we were hoping for — the seller passed on our offer for ${p}.\n\nThese things happen, and it doesn't mean we're done. Let's hop on a quick call to talk through our next move. There are a few options worth considering.\n\nTalk soon,\n${a}`,
+      direct: (c, p, a) => `${c},\n\nOffer on ${p} was rejected. Here are our options:\n\n1. Revise and resubmit at a higher price\n2. Move to next best property on your list\n3. Wait — this listing may reduce if it sits\n\nCall me today so we can decide quickly. Good properties don't wait.\n\n${a}`,
+    }
+  },
+  {
+    id: 'inspection-issues',
+    label: 'INSPECTION ISSUES',
+    subject: (c, p) => `Inspection results — ${p}`,
+    body: {
+      formal: (c, p, a) => `Dear ${c},\n\nI have reviewed the inspection report for ${p} and wanted to walk you through the findings.\n\nThe inspector identified several items that warrant discussion:\n\n[INSERT KEY INSPECTION ITEMS HERE]\n\nI recommend we request a credit or repair for the major items listed above. Minor items are normal for a property of this age and condition and are not cause for concern.\n\nI will prepare a formal repair addendum for your review and we can discuss our negotiating position when we speak. Please let me know your availability.\n\nSincerely,\n${a}`,
+      casual: (c, p, a) => `Hey ${c},\n\nGot the inspection report back for ${p} — let me break it down for you.\n\nThe big items: [INSERT KEY INSPECTION ITEMS HERE]\n\nThe minor stuff is normal for a house like this — I wouldn't stress about it.\n\nHere's my suggestion: we ask the seller for a credit or repair on the major items. I'll draft a repair addendum today. Let's talk through it before I send — are you free this afternoon?\n\n${a}`,
+      direct: (c, p, a) => `${c},\n\nInspection results for ${p}:\n\nMajor items flagged: [INSERT KEY INSPECTION ITEMS HERE]\n\nRecommendation: Request seller credit or repair on major items. Minor deficiencies — normal, don't negotiate.\n\nI'll draft the repair addendum today. Review it before end of day — we have a 7-day window.\n\n${a}`,
+    }
+  },
+  {
+    id: 'closing-delay',
+    label: 'CLOSING DELAY',
+    subject: (c, p) => `Closing date update — ${p}`,
+    body: {
+      formal: (c, p, a) => `Dear ${c},\n\nI am writing to inform you of a delay in our closing timeline for ${p}.\n\n[REASON FOR DELAY: e.g., lender requires additional documentation / appraisal timeline extended]\n\nOur new anticipated closing date is [NEW DATE]. While I understand this may be an inconvenience, I want to assure you that I am actively working with all parties to resolve the outstanding items as quickly as possible.\n\nIf you have any time-sensitive obligations tied to the original closing date (movers, lease end, etc.), please let me know immediately so we can address them.\n\nI will keep you updated as the situation develops.\n\nSincerely,\n${a}`,
+      casual: (c, p, a) => `Hey ${c},\n\nHeads up — we're looking at a delay on closing for ${p}.\n\n[REASON FOR DELAY]\n\nNew target date: [NEW DATE]\n\nI know this is annoying, and I'm sorry for the uncertainty. I'm on top of it and pushing to get everyone moving. If this affects your movers or lease, let me know and we'll figure it out.\n\nI'll keep you posted — you won't be left in the dark.\n\n${a}`,
+      direct: (c, p, a) => `${c},\n\nClosing on ${p} is delayed.\n\nReason: [REASON FOR DELAY]\nNew date: [NEW DATE]\n\nAction needed from you: [ANY REQUIRED CLIENT ACTION]\n\nI'm managing it. I'll update you in 24–48 hours. If this impacts your move logistics, contact me immediately.\n\n${a}`,
+    }
+  },
+  {
+    id: 'price-reduction',
+    label: 'PRICE REDUCTION (SELLER)',
+    subject: (c, p) => `Pricing recommendation for ${p}`,
+    body: {
+      formal: (c, p, a) => `Dear ${c},\n\nI wanted to reach out regarding the current market performance of ${p}.\n\nAfter careful analysis of recent comparable sales and buyer activity, I believe we have an opportunity to improve the property's position in the market with a strategic price adjustment.\n\nKey data points:\n· Days on market: [X] days (market average: [Y])\n· Showings in past 30 days: [N]\n· Comparable recent sale: [ADDRESS] at [PRICE]\n\nI recommend we consider a reduction to [RECOMMENDED PRICE]. This would position the property more competitively and is likely to generate increased showing activity and offer potential.\n\nI would welcome the opportunity to discuss this further at your convenience.\n\nSincerely,\n${a}`,
+      casual: (c, p, a) => `Hey ${c},\n\nI want to be straight with you about ${p} — I think it's time to talk about the price.\n\nWe've been on the market for [X] days, the market average is [Y], and showings have [been strong/slowed]. A comparable home at [ADDRESS] just closed at [PRICE].\n\nMy recommendation: drop to [RECOMMENDED PRICE]. I know that's not what you want to hear, but it's the move that gets this sold. The longer we sit, the worse our negotiating position gets.\n\nWhen can we connect to talk it through?\n\n${a}`,
+      direct: (c, p, a) => `${c},\n\nData on ${p}:\n· [X] days on market (avg: [Y])\n· [N] showings, 0 offers\n· Comp: [ADDRESS] closed at [PRICE]\n\nRecommendation: reduce to [RECOMMENDED PRICE] by [DATE].\n\nEvery week we sit costs negotiating leverage. Let's move on this. Can we connect today?\n\n${a}`,
+    }
+  },
+  {
+    id: 'post-close',
+    label: 'POST-CLOSE CHECK-IN',
+    subject: (c, p) => `Welcome home, ${c} — checking in`,
+    body: {
+      formal: (c, p, a) => `Dear ${c},\n\nI wanted to take a moment to congratulate you once more on the successful closing of ${p}. It was a pleasure working with you throughout this process.\n\nI hope the move has gone smoothly and you are beginning to settle in. Please do not hesitate to reach out if you have any questions or if there is anything I can assist with — whether that is a contractor referral, a neighborhood recommendation, or simply advice on your new home.\n\nI would also greatly appreciate any referrals you may be able to send my way. My business grows primarily through the trust of clients like you.\n\nWishing you all the best in your new home.\n\nSincerely,\n${a}`,
+      casual: (c, p, a) => `Hey ${c}!\n\nJust wanted to check in — how's the new place at ${p}? Hopefully the move went smoothly!\n\nIf you need any contractor recommendations, neighborhood tips, or just have questions about the house, I'm always here.\n\nAlso — if you know anyone looking to buy or sell, I'd love the introduction. Referrals are the biggest compliment I can get.\n\nEnjoy your new home!\n${a}`,
+      direct: (c, p, a) => `${c},\n\nCongrats on ${p} — you're a homeowner.\n\nIf anything comes up with the house, need a contractor, or have questions — reach out.\n\nIf you know someone looking to buy or sell, an introduction goes a long way. I appreciate the trust.\n\n${a}`,
+    }
+  },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const agentProfile = (() => { try { return JSON.parse(localStorage.getItem('meridian_agent_profile')); } catch { return null; } })();
+const agentName = agentProfile?.agent?.name || 'Your Agent';
+const profileStyle = agentProfile?.communication_style || 'direct';
+
+function getStyle() {
+  const override = document.getElementById('style-override')?.value;
+  return override || profileStyle;
+}
+function getClient() { return document.getElementById('client-name').value.trim() || 'Client'; }
+function getProp()   { return document.getElementById('prop-ref').value.trim() || '[Property]'; }
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const style = getStyle();
+  const client = getClient();
+  const prop   = getProp();
+
+  document.getElementById('template-grid').innerHTML = TEMPLATES.map(t => {
+    const body = t.body[style](client, prop, agentName);
+    const preview = body.split('\n').filter(l => l.trim()).slice(1, 3).join(' ').slice(0, 120) + '…';
+    return `
+      <div class="template-card">
+        <p class="t-label">${t.label}</p>
+        <p class="t-subject">${t.subject(client, prop)}</p>
+        <p class="t-preview">${preview}</p>
+        <div class="t-actions">
+          <button class="btn-view" onclick="openModal('${t.id}')">VIEW</button>
+          <button class="btn-copy-t" onclick="copyTemplate('${t.id}')">COPY</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function refreshPreviews() { renderGrid(); }
+
+function openModal(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  const style  = getStyle();
+  const client = getClient();
+  const prop   = getProp();
+  document.getElementById('modal-subject').textContent = t.subject(client, prop);
+  document.getElementById('modal-text').textContent    = t.body[style](client, prop, agentName);
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal') || e.target.className === 'btn-close') {
+    document.getElementById('modal').classList.remove('open');
+  }
+}
+
+function copyModal() {
+  navigator.clipboard.writeText(document.getElementById('modal-text').textContent)
+    .then(() => { const b = event.target; b.textContent = 'COPIED'; setTimeout(() => b.textContent = 'COPY EMAIL', 2000); });
+}
+
+function copyTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  const text = t.body[getStyle()](getClient(), getProp(), agentName);
+  navigator.clipboard.writeText(text).then(() => {
+    event.target.textContent = 'COPIED'; setTimeout(() => event.target.textContent = 'COPY', 2000);
+  });
+}
+
+// Init
+renderGrid();
+</script>
+</body>
+</html>

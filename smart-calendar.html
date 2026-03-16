@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Smart Calendar & Inbox</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0A0A0A; --bg-card:#1A1A1A; --bg-surface:#141414; --bg-hover:#1F1F1F;
+    --border:#2A2A2A; --border-light:#333333;
+    --text-primary:#FFFFFF; --text-secondary:rgba(255,255,255,0.6); --text-tertiary:rgba(255,255,255,0.3);
+    --urgent:#FF4444; --urgent-bg:rgba(255,68,68,0.12);
+    --active:#00C48C; --active-bg:rgba(0,196,140,0.12);
+    --pending:#FFB800; --pending-bg:rgba(255,184,0,0.12);
+    --info:#4A9EFF; --info-bg:rgba(74,158,255,0.12);
+    /* Calendar event colors */
+    --closing:#C86060;    --closing-bg:rgba(200,96,96,0.12);
+    --inspection:#C07840; --inspection-bg:rgba(192,120,64,0.12);
+    --followup:#C8A030;   --followup-bg:rgba(200,160,48,0.12);
+    --personal:rgba(255,255,255,0.2); --personal-bg:rgba(255,255,255,0.05);
+    /* Inbox tags */
+    --tag-urgent:#FF4444;
+    --tag-deadline:#FFB800;
+    --tag-counter:#4A9EFF;
+    --tag-action:#00C48C;
+    --tag-auto:rgba(255,255,255,0.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text-primary);font-family:'Inter',sans-serif;font-weight:300;font-size:14px;min-height:100vh;}
+  body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 48px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(10,10,10,0.95);backdrop-filter:blur(20px);}
+  .nav-logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:0.3em;}
+  .nav-back{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--text-secondary);text-decoration:none;transition:color 0.15s;}
+  .nav-back:hover{color:var(--text-primary);}
+  .nav-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--text-tertiary);}
+
+  .page-wrapper{padding:100px 48px 80px;max-width:960px;margin:0 auto;}
+
+  .page-header{margin-bottom:36px;}
+  .page-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--text-tertiary);margin-bottom:12px;}
+  .page-title{font-size:36px;font-weight:300;letter-spacing:-0.02em;margin-bottom:8px;}
+  .page-sub{font-size:13px;color:var(--text-secondary);line-height:1.7;max-width:580px;}
+
+  /* CONNECT SECTION */
+  .connect-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:40px;}
+  .connect-card{background:var(--bg-card);padding:24px 28px;}
+  .provider-name{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;margin-bottom:6px;}
+  .provider-email{font-size:11px;color:var(--active);margin-bottom:12px;font-family:'DM Mono',monospace;letter-spacing:0.05em;display:none;}
+  .provider-desc{font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;}
+  .btn-connect{background:none;border:1px solid var(--border-light);color:var(--text-secondary);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;padding:10px 20px;cursor:pointer;transition:all 0.15s;}
+  .btn-connect:hover{border-color:var(--text-primary);color:var(--text-primary);}
+  .btn-connect.connected{border-color:rgba(0,196,140,0.4);color:var(--active);cursor:default;}
+  .connect-status{margin-top:12px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--text-tertiary);}
+
+  /* SECTION HEADERS */
+  .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--text-tertiary);}
+  .section-meta{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--text-tertiary);}
+
+  /* FILTER TABS */
+  .filter-tabs{display:flex;gap:1px;background:var(--border);}
+  .filter-tab{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;padding:7px 12px;background:var(--bg-card);color:var(--text-tertiary);cursor:pointer;border:none;transition:all 0.15s;}
+  .filter-tab.active{background:var(--bg-hover);color:var(--text-primary);}
+
+  /* INBOX LIST */
+  .inbox-list{border:1px solid var(--border);margin-bottom:40px;}
+  .inbox-empty{padding:32px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-tertiary);}
+  .inbox-loading{padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-tertiary);animation:pulse 1.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  .email-row{display:grid;grid-template-columns:4px 1fr auto;align-items:stretch;border-bottom:1px solid var(--border);transition:background 0.15s;cursor:pointer;}
+  .email-row:last-child{border-bottom:none;}
+  .email-row:hover{background:var(--bg-hover);}
+  .email-stripe{min-height:60px;}
+  .email-body{padding:14px 16px;}
+  .email-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .email-sender{font-size:12px;font-weight:500;color:var(--text-primary);}
+  .email-subject{font-size:12px;color:var(--text-secondary);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px;}
+  .email-action{font-size:11px;color:var(--text-tertiary);line-height:1.4;}
+  .email-meta{padding:14px 16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+  .email-tx{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-tertiary);text-align:right;}
+
+  /* EMAIL TAGS */
+  .etag{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;padding:3px 7px;white-space:nowrap;}
+  .etag-URGENT   {background:rgba(255,68,68,0.12);color:var(--tag-urgent);border:1px solid rgba(255,68,68,0.25);}
+  .etag-DEADLINE {background:rgba(255,184,0,0.12);color:var(--tag-deadline);border:1px solid rgba(255,184,0,0.25);}
+  .etag-COUNTER  {background:rgba(74,158,255,0.12);color:var(--tag-counter);border:1px solid rgba(74,158,255,0.25);}
+  .etag-ACTION   {background:rgba(0,196,140,0.12);color:var(--tag-action);border:1px solid rgba(0,196,140,0.25);}
+  .etag-AUTO-HANDLED{background:rgba(255,255,255,0.04);color:var(--text-tertiary);border:1px solid var(--border);}
+
+  /* CALENDAR EVENTS */
+  .events-list{border:1px solid var(--border);margin-bottom:32px;}
+  .event-row{display:grid;grid-template-columns:4px 1fr auto;align-items:stretch;border-bottom:1px solid var(--border);transition:background 0.15s;}
+  .event-row:last-child{border-bottom:none;}
+  .event-row:hover{background:var(--bg-hover);}
+  .event-stripe{min-height:52px;}
+  .event-body{padding:14px 16px;}
+  .event-header{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .event-title{font-size:13px;font-weight:400;}
+  .event-badges{display:flex;gap:6px;}
+  .event-meta{font-size:11px;color:var(--text-tertiary);}
+  .event-action{padding:14px 16px;display:flex;align-items:center;}
+
+  .badge{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.1em;padding:3px 7px;}
+  .badge-in {background:rgba(96,144,184,0.12);color:#6090B8;border:1px solid rgba(96,144,184,0.3);}
+  .badge-on {background:rgba(96,168,120,0.12);color:#60A878;border:1px solid rgba(96,168,120,0.3);}
+  .badge-unmovable{background:rgba(255,68,68,0.1);color:var(--urgent);border:1px solid rgba(255,68,68,0.2);}
+
+  .btn-add{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;padding:7px 14px;background:none;border:1px solid var(--border-light);color:var(--text-secondary);cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+  .btn-add:hover{border-color:var(--text-primary);color:var(--text-primary);}
+  .btn-add.added{border-color:rgba(0,196,140,0.4);color:var(--active);cursor:default;}
+
+  /* SYNC ROW */
+  .sync-row{display:flex;align-items:center;gap:16px;margin-bottom:40px;}
+  .btn-sync-all{background:var(--text-primary);color:#0A0A0A;border:none;padding:14px 32px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.2em;cursor:pointer;transition:opacity 0.2s;}
+  .btn-sync-all:hover{opacity:0.85;}
+  .sync-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-tertiary);}
+
+  /* FOLDERS ROW */
+  .folders-row{display:flex;align-items:center;gap:12px;margin-bottom:40px;}
+  .btn-folders{background:none;border:1px solid var(--border-light);color:var(--text-secondary);padding:12px 24px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;cursor:pointer;transition:all 0.15s;}
+  .btn-folders:hover{border-color:var(--text-primary);color:var(--text-primary);}
+  .folders-note{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-tertiary);}
+
+  /* OAUTH NOTE */
+  .oauth-note{padding:20px 24px;border:1px solid var(--border);font-size:12px;color:var(--text-tertiary);line-height:1.7;}
+  .oauth-note strong{color:var(--text-secondary);}
+
+  /* ERROR STRIP */
+  .error-strip{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.2);padding:14px 18px;margin-bottom:24px;font-size:12px;color:#FF7070;display:none;}
+  .error-strip.visible{display:block;}
+
+  @media(max-width:640px){
+    nav{padding:18px 24px;}
+    .page-wrapper{padding:88px 24px 60px;}
+    .connect-grid{grid-template-columns:1fr;}
+    .section-header{flex-direction:column;align-items:flex-start;gap:10px;}
+  }
+</style>
+<script src="nav.js"></script>
+</head>
+<body>
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" class="nav-back">← DASHBOARD</a>
+  <span class="nav-tag">SMART CALENDAR & INBOX</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <p class="page-eyebrow">Pro Feature</p>
+    <h1 class="page-title">Smart Calendar & Inbox</h1>
+    <p class="page-sub">One OAuth connection powers both. Meridian scans your inbox with Claude AI, surfaces only what matters, and auto-generates calendar events from your transaction dates.</p>
+  </div>
+
+  <!-- ERROR STRIP -->
+  <div class="error-strip" id="error-strip"></div>
+
+  <!-- CONNECT -->
+  <div class="connect-grid">
+    <div class="connect-card">
+      <p class="provider-name">GMAIL</p>
+      <p class="provider-email" id="gmail-email"></p>
+      <p class="provider-desc">Gmail + Google Calendar via OAuth 2.0. Scopes: gmail.modify, gmail.labels, calendar.events. Creates a Meridian label per transaction.</p>
+      <button class="btn-connect" id="btn-gmail" onclick="connectProvider('gmail')">CONNECT GMAIL</button>
+      <p class="connect-status" id="gmail-status"></p>
+    </div>
+    <div class="connect-card">
+      <p class="provider-name">OUTLOOK / MICROSOFT 365</p>
+      <p class="provider-email" id="outlook-email"></p>
+      <p class="provider-desc">Outlook + Outlook Calendar via Microsoft OAuth 2.0. Scopes: Mail.ReadWrite, Calendars.ReadWrite. Creates Meridian folders per transaction.</p>
+      <button class="btn-connect" id="btn-outlook" onclick="connectProvider('outlook')">CONNECT OUTLOOK</button>
+      <p class="connect-status" id="outlook-status"></p>
+    </div>
+  </div>
+
+  <!-- INBOX SECTION -->
+  <div class="section-header">
+    <p class="section-label">INBOX — ANALYZED</p>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <span class="section-meta" id="inbox-meta"></span>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterInbox('ALL',this)">ALL</button>
+        <button class="filter-tab" onclick="filterInbox('URGENT',this)">URGENT</button>
+        <button class="filter-tab" onclick="filterInbox('DEADLINE',this)">DEADLINES</button>
+        <button class="filter-tab" onclick="filterInbox('COUNTER',this)">COUNTERS</button>
+        <button class="filter-tab" onclick="filterInbox('ACTION',this)">ACTION</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inbox-list" id="inbox-list">
+    <div class="inbox-empty">Connect Gmail or Outlook above to see your analyzed inbox.</div>
+  </div>
+
+  <!-- FOLDER CREATION -->
+  <div class="folders-row" id="folders-row" style="display:none">
+    <button class="btn-folders" onclick="createFolders()">CREATE TRANSACTION FOLDERS →</button>
+    <span class="folders-note" id="folders-note">Auto-creates one folder per active deal in your connected email</span>
+  </div>
+
+  <!-- CALENDAR SECTION -->
+  <div class="section-header" style="margin-top:8px;">
+    <p class="section-label">CALENDAR — FROM YOUR DEALS</p>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterCal('all',this)">ALL</button>
+      <button class="filter-tab" onclick="filterCal('in',this)">IN BUSINESS</button>
+      <button class="filter-tab" onclick="filterCal('on',this)">ON BUSINESS</button>
+    </div>
+  </div>
+
+  <div class="events-list" id="events-list"></div>
+
+  <div class="sync-row">
+    <button class="btn-sync-all" onclick="syncAll()">SYNC ALL TO CALENDAR</button>
+    <span class="sync-count" id="sync-count">Loading…</span>
+  </div>
+
+  <div class="oauth-note">
+    <strong>Vercel env vars required:</strong>
+    GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET (Gmail + Calendar) ·
+    MICROSOFT_CLIENT_ID · MICROSOFT_CLIENT_SECRET · MICROSOFT_TENANT_ID (Outlook + Calendar) ·
+    ANTHROPIC_API_KEY (inbox analysis) ·
+    SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY (token storage, agent isolation).
+    Redirect URIs: <strong>/api/auth/gmail-callback</strong> and <strong>/api/auth/outlook-mail-callback</strong>.
+  </div>
+</div>
+
+<script>
+// ── CALENDAR: load real deal events ───────────────────────────
+const TX_KEY = 'meridian_transactions';
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+function getDaysUntil(iso) {
+  if (!iso) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const [y,m,d] = iso.split('-').map(Number);
+  return Math.round((new Date(y,m-1,d) - today) / 86400000);
+}
+function daysTag(iso) {
+  const n = getDaysUntil(iso);
+  if (n === null) return '';
+  if (n === 0) return ' · TODAY';
+  if (n > 0) return ` · ${n}d out`;
+  return ` · ${Math.abs(n)}d ago`;
+}
+function buildCalEvents(deals) {
+  const evs = [];
+  deals.forEach(deal => {
+    const addr   = deal.address ? deal.address.split(',')[0] : 'Unknown';
+    const client = deal.client ? ` (${deal.client})` : '';
+    if (deal.closingDate) evs.push({
+      id:`ev-close-${deal.id}`, title:`CLOSING — ${addr}${client}`,
+      date:fmtDate(deal.closingDate), rawDate:deal.closingDate, time:'10:00 AM',
+      color:'closing', biz:'in', type:'Closing Date', tx:addr,
+      unmovable:true, extra:daysTag(deal.closingDate),
+    });
+    if (deal.inspectionDate) evs.push({
+      id:`ev-insp-${deal.id}`, title:`INSPECTION DEADLINE — ${addr}`,
+      date:fmtDate(deal.inspectionDate), rawDate:deal.inspectionDate, time:'5:00 PM',
+      color:'inspection', biz:'in', type:'Inspection Contingency', tx:addr,
+      unmovable:false, extra:daysTag(deal.inspectionDate),
+    });
+  });
+  evs.sort((a,b) => {
+    if (!a.rawDate && !b.rawDate) return 0;
+    if (!a.rawDate) return 1; if (!b.rawDate) return -1;
+    return new Date(a.rawDate) - new Date(b.rawDate);
+  });
+  return evs;
+}
+const DEMO_EVENTS = [
+  {id:'e1',title:'CLOSING — 8812 Oak Ave (Johnson)',date:'March 21, 2026',rawDate:'2026-03-21',time:'10:00 AM',color:'closing',biz:'in',type:'Closing Date',tx:'8812 Oak Ave',unmovable:true,extra:' · 8d out'},
+  {id:'e9',title:'CLOSING — 1140 Ridgeway (Patel)',date:'April 4, 2026',rawDate:'2026-04-04',time:'10:00 AM',color:'closing',biz:'in',type:'Closing Date',tx:'1140 Ridgeway',unmovable:true,extra:' · 22d out'},
+  {id:'e3',title:'INSPECTION DEADLINE — 1140 Ridgeway',date:'March 13, 2026',rawDate:'2026-03-13',time:'5:00 PM',color:'inspection',biz:'in',type:'Inspection Contingency',tx:'1140 Ridgeway',unmovable:false,extra:' · TODAY'},
+  {id:'e7',title:'FOLLOW-UP — Marcus Torres',date:'March 12, 2026',rawDate:'2026-03-12',time:'',color:'followup',biz:'in',type:'Follow-up Call',tx:'Lead pipeline',unmovable:false,extra:' · 1d ago'},
+  {id:'e10',title:'LENDER LUNCH — Jake Moretti',date:'March 14, 2026',rawDate:'2026-03-14',time:'12:30 PM',color:'personal',biz:'on',type:'Networking',tx:'Referral partner',unmovable:false,extra:' · 1d out'},
+  {id:'e11',title:'BOARD OF REALTORS TRAINING',date:'March 19, 2026',rawDate:'2026-03-19',time:'9:00 AM',color:'personal',biz:'on',type:'Training',tx:'NAR CE Credits',unmovable:false,extra:' · 6d out'},
+];
+function loadCalEvents() {
+  try {
+    const raw = localStorage.getItem(TX_KEY);
+    if (raw) {
+      const deals = JSON.parse(raw);
+      if (Array.isArray(deals) && deals.length) return {events:buildCalEvents(deals),isDemo:false};
+    }
+  } catch {}
+  return {events:DEMO_EVENTS,isDemo:true};
+}
+
+let {events:CAL_EVENTS, isDemo:CAL_DEMO} = loadCalEvents();
+let calFilter = 'all';
+const addedSet = new Set();
+
+function getStripeColor(c) {
+  return ({closing:'var(--closing)',inspection:'var(--inspection)',followup:'var(--followup)',personal:'var(--personal)'})[c] || 'var(--border)';
+}
+function renderCalendar() {
+  const vis = calFilter === 'all' ? CAL_EVENTS : CAL_EVENTS.filter(e => e.biz === calFilter);
+  const el  = document.getElementById('events-list');
+  if (!vis.length) {
+    el.innerHTML = `<div class="inbox-empty">${CAL_DEMO ? 'NO EVENTS IN THIS CATEGORY' : 'NO EVENTS — add closing or inspection dates to your deals.'}</div>`;
+    updateSyncCount(); return;
+  }
+  el.innerHTML = vis.map(e => {
+    const bizBadge = e.biz === 'in' ? `<span class="badge badge-in">IN BUSINESS</span>` : `<span class="badge badge-on">ON BUSINESS</span>`;
+    const movBadge = e.unmovable ? `<span class="badge badge-unmovable">UNMOVABLE</span>` : '';
+    const isAdded  = addedSet.has(e.id);
+    const dateStr  = e.date ? `${e.date}${e.extra||''}${e.time?' · '+e.time:''}` : '—';
+    return `<div class="event-row" data-biz="${e.biz}">
+      <div class="event-stripe" style="background:${getStripeColor(e.color)};opacity:0.7;"></div>
+      <div class="event-body">
+        <div class="event-header"><p class="event-title">${e.title}</p><div class="event-badges">${bizBadge}${movBadge}</div></div>
+        <p class="event-meta">${dateStr} · ${e.type} · ${e.tx}</p>
+      </div>
+      <div class="event-action">
+        <button class="btn-add${isAdded?' added':''}" id="add-${e.id}" onclick="addCalEvent('${e.id}')" ${isAdded?'disabled':''}>${isAdded?'ADDED ✓':'ADD'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterCal(type, btn) {
+  calFilter = type;
+  document.querySelectorAll('.filter-tab').forEach(b => { if (b.closest('.section-header:last-of-type, .sync-row') || b.getAttribute('onclick')?.includes('filterCal')) b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCalendar();
+}
+function addCalEvent(id) {
+  addedSet.add(id);
+  const btn = document.getElementById('add-'+id);
+  if (btn) { btn.textContent = 'ADDED ✓'; btn.classList.add('added'); btn.disabled = true; }
+  updateSyncCount();
+}
+function updateSyncCount() {
+  const rem = CAL_EVENTS.length - addedSet.size;
+  document.getElementById('sync-count').textContent = rem > 0 ? `${rem} event${rem!==1?'s':''} ready` : 'All synced ✓';
+}
+function syncAll() {
+  CAL_EVENTS.forEach((e,i) => setTimeout(() => addCalEvent(e.id), i*80));
+}
+
+// ── INBOX ──────────────────────────────────────────────────────
+let ALL_EMAILS = [];
+let inboxFilter = 'ALL';
+let connected   = false;
+
+const TAG_STRIPE = {
+  URGENT:'var(--tag-urgent)', DEADLINE:'var(--tag-deadline)',
+  COUNTER:'var(--tag-counter)', ACTION:'var(--tag-action)',
+  'AUTO-HANDLED':'rgba(255,255,255,0.15)',
+};
+
+function renderInbox() {
+  const el  = document.getElementById('inbox-list');
+  const vis = inboxFilter === 'ALL' ? ALL_EMAILS : ALL_EMAILS.filter(e => e.tag === inboxFilter);
+  if (!vis.length) {
+    el.innerHTML = `<div class="inbox-empty">${connected ? 'No emails match this filter.' : 'Connect Gmail or Outlook above to see your analyzed inbox.'}</div>`;
+    return;
+  }
+  el.innerHTML = vis.map(e => `
+    <div class="email-row">
+      <div class="email-stripe" style="background:${TAG_STRIPE[e.tag]||TAG_STRIPE.ACTION};opacity:0.8;"></div>
+      <div class="email-body">
+        <div class="email-header">
+          <span class="email-sender">${esc(e.sender)}</span>
+          <span class="etag etag-${e.tag}">${e.tag}</span>
+        </div>
+        <p class="email-subject">${esc(e.subject)}</p>
+        ${e.required_action ? `<p class="email-action">→ ${esc(e.required_action)}</p>` : ''}
+      </div>
+      <div class="email-meta">
+        ${e.transaction_match ? `<span class="email-tx">${esc(e.transaction_match)}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function filterInbox(tag, btn) {
+  inboxFilter = tag;
+  document.querySelectorAll('.filter-tab').forEach(b => {
+    if (b.getAttribute('onclick')?.includes('filterInbox')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  renderInbox();
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadInbox() {
+  const el = document.getElementById('inbox-list');
+  el.innerHTML = '<div class="inbox-loading">SCANNING INBOX WITH AI…</div>';
+  document.getElementById('inbox-meta').textContent = '';
+  try {
+    const res  = await fetch('/api/inbox');
+    const data = await res.json();
+    if (!res.ok) {
+      el.innerHTML = `<div class="inbox-empty">${esc(data.error || 'Error loading inbox.')}</div>`;
+      return;
+    }
+    ALL_EMAILS = data.emails || [];
+    document.getElementById('inbox-meta').textContent =
+      `${data.total_filtered} of ${data.total_scanned} scanned · ${data.agent_email||''}`;
+    // Show folder button if we have connected deals
+    const deals = getDeals();
+    if (deals.length) {
+      document.getElementById('folders-row').style.display = 'flex';
+      document.getElementById('folders-note').textContent =
+        `Creates ${deals.length} folder${deals.length!==1?'s':''} in your ${data.provider === 'gmail' ? 'Gmail' : 'Outlook'}`;
+    }
+    renderInbox();
+  } catch {
+    el.innerHTML = '<div class="inbox-empty">Could not reach inbox API. Check your connection.</div>';
+  }
+}
+
+function getDeals() {
+  try {
+    const raw = localStorage.getItem(TX_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+async function createFolders() {
+  const btn   = document.querySelector('.btn-folders');
+  const deals = getDeals();
+  if (!deals.length) { showError('No deals in your pipeline. Add deals in the Transaction Dashboard first.'); return; }
+  btn.textContent = 'CREATING…';
+  btn.disabled    = true;
+  try {
+    const res  = await fetch('/api/create-folders', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ deals }),
+    });
+    const data = await res.json();
+    const created = data.results?.filter(r => r.status === 'created').length || 0;
+    const exists  = data.results?.filter(r => r.status === 'exists').length  || 0;
+    btn.textContent = `✓ ${created} CREATED · ${exists} ALREADY EXIST`;
+  } catch {
+    btn.textContent = 'ERROR — try again';
+    btn.disabled    = false;
+  }
+}
+
+// ── OAUTH CONNECT ──────────────────────────────────────────────
+function connectProvider(provider) {
+  if (provider === 'gmail')   window.location.href = '/api/auth/gmail';
+  if (provider === 'outlook') window.location.href = '/api/auth/outlook-mail';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-strip');
+  el.textContent = msg; el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 6000);
+}
+
+function markConnected(provider, email) {
+  connected = true;
+  const btnId = provider === 'gmail' ? 'btn-gmail' : 'btn-outlook';
+  const label = provider === 'gmail' ? '✓ GMAIL CONNECTED' : '✓ OUTLOOK CONNECTED';
+  const btn   = document.getElementById(btnId);
+  if (btn) { btn.textContent = label; btn.classList.add('connected'); btn.disabled = true; }
+  const emailEl = document.getElementById(provider === 'gmail' ? 'gmail-email' : 'outlook-email');
+  if (emailEl && email) { emailEl.textContent = email; emailEl.style.display = 'block'; }
+  localStorage.setItem(`meridian_${provider}_connected`, '1');
+  if (email) localStorage.setItem(`meridian_${provider}_email`, email);
+  loadInbox();
+}
+
+// Check auth callback URL params
+(function checkAuthReturn() {
+  const p = new URLSearchParams(window.location.search);
+  const result   = p.get('auth');
+  const provider = p.get('provider');
+  const email    = p.get('email');
+  window.history.replaceState({}, '', window.location.pathname);
+  if (!result) return;
+  if (result === 'success') {
+    markConnected(provider, decodeURIComponent(email || ''));
+  } else {
+    const reason = p.get('reason') || 'unknown';
+    showError(`OAuth failed (${provider}): ${reason}. Check Vercel env vars and try again.`);
+  }
+})();
+
+// Restore connected state on load
+(function restoreState() {
+  ['gmail','outlook'].forEach(provider => {
+    if (localStorage.getItem(`meridian_${provider}_connected`)) {
+      connected = true;
+      const btnId = provider === 'gmail' ? 'btn-gmail' : 'btn-outlook';
+      const label = provider === 'gmail' ? '✓ GMAIL CONNECTED' : '✓ OUTLOOK CONNECTED';
+      const btn   = document.getElementById(btnId);
+      if (btn) { btn.textContent = label; btn.classList.add('connected'); btn.disabled = true; }
+      const email = localStorage.getItem(`meridian_${provider}_email`);
+      const emailEl = document.getElementById(provider === 'gmail' ? 'gmail-email' : 'outlook-email');
+      if (emailEl && email) { emailEl.textContent = email; emailEl.style.display = 'block'; }
+    }
+  });
+  if (connected) loadInbox();
+})();
+
+// Live reload when transactions update
+window.addEventListener('meridian_deals_updated', () => {
+  const {events, isDemo} = loadCalEvents();
+  CAL_EVENTS = events; CAL_DEMO = isDemo;
+  addedSet.clear();
+  renderCalendar(); updateSyncCount();
+});
+
+// Init calendar
+renderCalendar();
+updateSyncCount();
+</script>
+</body>
+</html>

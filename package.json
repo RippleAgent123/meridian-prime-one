@@ -1,0 +1,13 @@
+{
+  "name": "meridian",
+  "version": "1.0.0",
+  "description": "AI Chief of Staff for Real Estate Agents",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "stripe": "^17.0.0"
+  }
+}

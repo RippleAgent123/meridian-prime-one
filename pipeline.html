@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Pipeline & CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:ital,wght@0,400;0,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#060606; --surface:#0E0E0E; --card:#141414; --border:#1E1E1E; --border-light:#2A2A2A;
+    --white:#F0F0EE; --off-white:#C8C8C4; --muted:#5A5A56; --dim:#2A2A2A;
+    --urgent:#C86060; --urgent-bg:rgba(200,96,96,0.10);
+    --active:#60A878; --active-bg:rgba(96,168,120,0.10);
+    --pending:#C09850; --pending-bg:rgba(192,152,80,0.10);
+    --info:#6090B8; --info-bg:rgba(96,144,184,0.10);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--off-white);font-family:'Inter',sans-serif;font-weight:400;min-height:100vh;}
+  body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;background:rgba(6,6,6,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-between;padding:0 32px;}
+  .nav-logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.28em;color:var(--white);}
+  .nav-back{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--muted);text-decoration:none;transition:color .15s;}
+  .nav-back:hover{color:var(--white);}
+  .nav-right{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--muted);}
+
+  /* PAGE */
+  .page{padding:72px 32px 60px;max-width:1160px;margin:0 auto;}
+  .page-header{margin-bottom:24px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .page-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.28em;color:var(--muted);margin-bottom:10px;}
+  .page-title{font-size:28px;font-weight:600;color:var(--white);letter-spacing:-.2px;}
+
+  /* TABS */
+  .tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;}
+  .tab{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.16em;padding:10px 20px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;}
+  .tab:hover{color:var(--off-white);}
+  .tab.active{color:var(--white);border-bottom-color:var(--white);}
+
+  /* STATS ROW */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px;}
+  .stat{background:var(--card);padding:14px 16px;}
+  .stat-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--muted);margin-bottom:7px;}
+  .stat-val{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;color:var(--white);line-height:1;}
+  .stat-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+  .stat-sub.up{color:var(--active);}
+  .stat-sub.warn{color:var(--pending);}
+  .stat-sub.hot{color:var(--urgent);}
+
+  /* BADGE */
+  .badge{font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:2px;white-space:nowrap;}
+  .badge-urgent {background:var(--urgent-bg); color:var(--urgent);}
+  .badge-pending{background:var(--pending-bg);color:var(--pending);}
+  .badge-active {background:var(--active-bg); color:var(--active);}
+  .badge-info   {background:var(--info-bg);   color:var(--info);}
+
+  /* ── PIPELINE TAB ── */
+  .deal-list{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .deal-row{background:var(--surface);cursor:pointer;transition:background .15s;}
+  .deal-row:hover{background:var(--card);}
+  .deal-row.open{background:var(--card);}
+  .deal-summary{display:grid;grid-template-columns:1fr auto auto auto;gap:20px;align-items:center;padding:16px 20px;}
+  .deal-info{min-width:0;}
+  .deal-addr{font-size:14px;font-weight:500;color:var(--white);margin-bottom:2px;}
+  .deal-client{font-size:12px;color:var(--muted);}
+  .deal-stage{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:3px 9px;border-radius:2px;}
+  .s-offer   {background:var(--pending-bg);color:var(--pending);}
+  .s-pending {background:var(--active-bg); color:var(--active);}
+  .s-closing {background:var(--urgent-bg); color:var(--urgent);}
+  .s-listed  {background:var(--info-bg);   color:var(--info);}
+  .deal-price{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);}
+  .deal-chevron{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);transition:transform .2s;user-select:none;}
+  .deal-row.open .deal-chevron{transform:rotate(90deg);}
+
+  /* DEAL EXPANDED */
+  .deal-detail{display:none;border-top:1px solid var(--border);padding:20px;background:rgba(255,255,255,.02);}
+  .deal-row.open .deal-detail{display:block;}
+  .detail-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:16px;}
+  .d-block{display:flex;flex-direction:column;gap:5px;}
+  .d-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--muted);}
+  .d-val{font-size:13px;color:var(--off-white);line-height:1.4;}
+  .out-list{display:flex;flex-direction:column;gap:5px;margin-top:3px;}
+  .out-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--muted);}
+  .out-item::before{content:'';width:3px;height:3px;background:var(--muted);flex-shrink:0;margin-top:5px;border-radius:50%;}
+  .out-item.hot{color:var(--urgent);}
+  .out-item.hot::before{background:var(--urgent);}
+  .next-action{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border-light);border-radius:3px;}
+  .na-pre{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted);white-space:nowrap;padding-top:2px;flex-shrink:0;}
+  .na-text{font-size:13px;color:var(--off-white);line-height:1.5;}
+  .deal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .deal-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:6px 14px;background:none;border:1px solid var(--border-light);color:var(--muted);cursor:pointer;border-radius:3px;transition:all .15s;text-decoration:none;display:inline-block;}
+  .deal-btn:hover{color:var(--white);border-color:var(--off-white);}
+  .deal-btn.primary{background:var(--white);color:var(--bg);border-color:var(--white);}
+  .deal-btn.primary:hover{background:var(--off-white);}
+
+  /* ── CLIENTS TAB ── */
+  .crm-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .crm-search{flex:1;min-width:200px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--white);font-family:'Inter',sans-serif;font-size:12px;padding:7px 12px;border-radius:4px;outline:none;transition:border .15s;}
+  .crm-search::placeholder{color:var(--muted);}
+  .crm-search:focus{border-color:var(--border-light);}
+  .filter-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;padding:7px 12px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:3px;transition:all .15s;}
+  .filter-btn:hover,.filter-btn.active{border-color:var(--off-white);color:var(--off-white);}
+  .add-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;padding:7px 16px;background:var(--white);color:var(--bg);border:none;cursor:pointer;border-radius:3px;transition:opacity .15s;text-decoration:none;display:inline-block;}
+  .add-btn:hover{opacity:.85;}
+
+  .client-list{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .client-row{background:var(--surface);cursor:pointer;transition:background .15s;display:grid;grid-template-columns:40px 1fr auto auto;gap:14px;align-items:center;padding:13px 18px;}
+  .client-row:hover{background:var(--card);}
+  .client-row.open{background:var(--card);}
+  .client-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;color:var(--off-white);flex-shrink:0;border:1px solid var(--border);}
+  .client-info{min-width:0;}
+  .client-name{font-size:14px;font-weight:500;color:var(--white);}
+  .client-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:12px;flex-wrap:wrap;}
+  .client-tag{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;padding:2px 7px;border-radius:2px;}
+  .tag-buyer  {background:var(--info-bg);color:var(--info);}
+  .tag-seller {background:var(--pending-bg);color:var(--pending);}
+  .tag-both   {background:var(--active-bg);color:var(--active);}
+  .tag-past   {background:rgba(255,255,255,.05);color:var(--muted);}
+  .tag-hot    {background:var(--urgent-bg);color:var(--urgent);}
+  .client-last-contact{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;}
+
+  /* CLIENT EXPANDED */
+  .client-detail{display:none;border-top:1px solid var(--border);padding:18px 20px;background:rgba(255,255,255,.015);}
+  .client-row.open + .client-detail-row .client-detail,
+  .client-row.open ~ .client-detail{display:block;}
+  .client-detail-row{background:var(--card);}
+  .client-detail-row .client-detail{display:block;padding:16px 20px;border-top:1px solid var(--border);}
+
+  .cd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:14px;}
+  .cd-block{display:flex;flex-direction:column;gap:4px;}
+  .cd-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;color:var(--muted);}
+  .cd-val{font-size:13px;color:var(--off-white);}
+  .cd-note{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;padding:10px 14px;background:rgba(255,255,255,.03);border-left:2px solid var(--border-light);}
+  .cd-actions{display:flex;gap:7px;flex-wrap:wrap;}
+  .cd-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:6px 14px;background:none;border:1px solid var(--border-light);color:var(--muted);cursor:pointer;border-radius:3px;transition:all .15s;text-decoration:none;display:inline-block;}
+  .cd-btn:hover{color:var(--white);border-color:var(--off-white);}
+  .cd-btn.call{border-color:rgba(96,168,120,.35);color:var(--active);}
+  .cd-btn.call:hover{background:var(--active-bg);}
+  .cd-btn.text{border-color:rgba(192,152,80,.35);color:var(--pending);}
+  .cd-btn.text:hover{background:var(--pending-bg);}
+  .cd-btn.email{border-color:rgba(96,144,184,.35);color:var(--info);}
+  .cd-btn.email:hover{background:var(--info-bg);}
+
+  /* ── FILES TAB ── */
+  .files-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+  .file-card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:16px;cursor:pointer;transition:border-color .15s;}
+  .file-card:hover{border-color:var(--border-light);}
+  .fc-addr{font-size:14px;font-weight:500;color:var(--white);margin-bottom:4px;}
+  .fc-client{font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .fc-progress{height:3px;background:var(--dim);border-radius:2px;margin-bottom:6px;}
+  .fc-bar{height:100%;border-radius:2px;background:var(--active);}
+  .fc-progress-lbl{font-size:10px;color:var(--muted);margin-bottom:10px;}
+  .fc-items{display:flex;flex-direction:column;gap:4px;}
+  .fc-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);}
+  .fc-check{width:12px;height:12px;border-radius:2px;border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:8px;}
+  .fc-check.done{background:var(--active-bg);border-color:var(--active);color:var(--active);}
+  .fc-check.hot{background:var(--urgent-bg);border-color:var(--urgent);color:var(--urgent);}
+  .fc-footer{margin-top:12px;display:flex;justify-content:space-between;align-items:center;}
+  .fc-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);}
+
+  /* EMPTY STATE */
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state p{font-size:13px;margin-top:8px;}
+
+  /* HIDDEN */
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+
+  @media(max-width:700px){
+    nav{padding:0 16px;}
+    .page{padding:62px 16px 40px;}
+    .deal-summary{grid-template-columns:1fr auto auto;}.deal-price{display:none;}
+    .detail-cols{grid-template-columns:1fr;}
+    .stats-row{grid-template-columns:repeat(2,1fr);}
+    .cd-grid{grid-template-columns:1fr 1fr;}
+    .client-row{grid-template-columns:36px 1fr auto;}
+    .client-last-contact{display:none;}
+  }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" class="nav-back">← DASHBOARD</a>
+  <span class="nav-right">PIPELINE &amp; CRM</span>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <p class="page-eyebrow">Deals &amp; Clients</p>
+      <h1 class="page-title">Pipeline &amp; CRM</h1>
+    </div>
+    <a href="lead-intake.html" class="add-btn">+ ADD CLIENT</a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat">
+      <p class="stat-lbl">ACTIVE DEALS</p>
+      <p class="stat-val">5</p>
+      <p class="stat-sub up">↑ 1 from last month</p>
+    </div>
+    <div class="stat">
+      <p class="stat-lbl">CLOSINGS THIS MONTH</p>
+      <p class="stat-val">2</p>
+      <p class="stat-sub">$1.16M in volume</p>
+    </div>
+    <div class="stat">
+      <p class="stat-lbl">CRM CONTACTS</p>
+      <p class="stat-val">14</p>
+      <p class="stat-sub warn">3 need follow-up</p>
+    </div>
+    <div class="stat">
+      <p class="stat-lbl">DOCS OUTSTANDING</p>
+      <p class="stat-val">6</p>
+      <p class="stat-sub hot">2 blocking close</p>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('pipeline',this)">PIPELINE</button>
+    <button class="tab" onclick="switchTab('clients',this)">CLIENTS</button>
+    <button class="tab" onclick="switchTab('files',this)">FILES &amp; DOCS</button>
+  </div>
+
+  <!-- ── PIPELINE TAB ── -->
+  <div class="tab-pane active" id="tab-pipeline">
+    <div class="deal-list" id="deal-list"></div>
+  </div>
+
+  <!-- ── CLIENTS TAB ── -->
+  <div class="tab-pane" id="tab-clients">
+    <div class="crm-toolbar">
+      <input class="crm-search" type="text" placeholder="Search clients…" oninput="filterClients(this.value)" id="crm-search">
+      <button class="filter-btn active" onclick="setClientFilter('all',this)">ALL</button>
+      <button class="filter-btn" onclick="setClientFilter('buyer',this)">BUYERS</button>
+      <button class="filter-btn" onclick="setClientFilter('seller',this)">SELLERS</button>
+      <button class="filter-btn" onclick="setClientFilter('hot',this)">HOT LEADS</button>
+    </div>
+    <div class="client-list" id="client-list"></div>
+  </div>
+
+  <!-- ── FILES TAB ── -->
+  <div class="tab-pane" id="tab-files">
+    <div class="files-grid" id="files-grid"></div>
+  </div>
+
+</div>
+
+<script>
+// ── DEALS DATA ──
+const DEALS = [
+  {
+    id:'d1', addr:'8812 Oak Ave, Berwyn, IL 60402', client:'Marcus Torres', stage:'closing', stageLabel:'IN CLOSING', price:'$489,000',
+    lastContact:'Mar 8, 2026', closingDate:'Mar 21, 2026',
+    outstanding:[
+      {text:'HOA docs not yet received from seller',hot:true},
+      {text:'Final walkthrough scheduled for Mar 18',hot:false},
+      {text:'Wire instructions confirmed with title',hot:false},
+    ],
+    nextAction:'Follow up with listing agent today re: HOA docs — closing date is 13 days out and this is the last blocker.',
+  },
+  {
+    id:'d2', addr:'1140 Ridgeway Blvd, Oak Park, IL 60302', client:'Sarah & James Mitchell', stage:'pending', stageLabel:'UNDER CONTRACT', price:'$675,000',
+    lastContact:'Mar 7, 2026', closingDate:'Apr 4, 2026',
+    outstanding:[
+      {text:'Inspection report review — 3 days remaining',hot:true},
+      {text:'Radon mitigation estimate requested',hot:false},
+      {text:'Attorney review period ends Mar 13',hot:false},
+    ],
+    nextAction:'Call buyer today to review inspection findings. Attorney review window closes in 3 days.',
+  },
+  {
+    id:'d3', addr:'320 S. Clinton St, Chicago, IL 60661', client:'Marcus Torres', stage:'offer', stageLabel:'OFFER STAGE', price:'$1,150,000',
+    lastContact:'Mar 9, 2026', closingDate:'TBD',
+    outstanding:[
+      {text:'Seller counter expires Mar 10 at 5pm',hot:true},
+      {text:'Pre-approval letter expired Feb 28',hot:true},
+      {text:'Competing offer rumored — verify with agent',hot:false},
+    ],
+    nextAction:'Urgent: get updated pre-approval letter before responding to counter. Counter expires TODAY at 5pm.',
+  },
+  {
+    id:'d4', addr:'4450 W. Cermak Rd, Cicero, IL 60804', client:'Eddie (Listing)', stage:'listed', stageLabel:'ACTIVE LISTING', price:'$299,000',
+    lastContact:'Mar 5, 2026', closingDate:'—',
+    outstanding:[
+      {text:'12 days on market — consider price adjustment',hot:false},
+      {text:'Open house results: 4 showings, 0 offers',hot:false},
+      {text:'Professional photos scheduled Mar 12',hot:false},
+    ],
+    nextAction:'Schedule a call with sellers to review market data and discuss a $10k price reduction.',
+  },
+  {
+    id:'d5', addr:'712 S. Harrison St, Chicago, IL 60607', client:'Priya Nair', stage:'pending', stageLabel:'UNDER CONTRACT', price:'$540,000',
+    lastContact:'Mar 6, 2026', closingDate:'Mar 28, 2026',
+    outstanding:[
+      {text:'Appraisal ordered — results expected Mar 14',hot:false},
+      {text:'Lender requested 2 months of additional bank statements',hot:false},
+    ],
+    nextAction:'Check in with lender on bank statement submission. Monitor appraisal — no gap clause was included.',
+  },
+];
+
+function stageClass(s) {
+  const map = {offer:'s-offer',pending:'s-pending',closing:'s-closing',listed:'s-listed'};
+  return map[s]||'';
+}
+
+function renderDeals() {
+  document.getElementById('deal-list').innerHTML = DEALS.map(d => `
+    <div class="deal-row" id="${d.id}" onclick="toggleDeal('${d.id}')">
+      <div class="deal-summary">
+        <div class="deal-info">
+          <p class="deal-addr">${d.addr}</p>
+          <p class="deal-client">${d.client}</p>
+        </div>
+        <span class="deal-stage ${stageClass(d.stage)}">${d.stageLabel}</span>
+        <span class="deal-price">${d.price}</span>
+        <span class="deal-chevron">›</span>
+      </div>
+      <div class="deal-detail">
+        <div class="detail-cols">
+          <div class="d-block">
+            <span class="d-lbl">LAST CONTACT</span>
+            <span class="d-val">${d.lastContact}</span>
+          </div>
+          <div class="d-block">
+            <span class="d-lbl">CLOSING DATE</span>
+            <span class="d-val">${d.closingDate}</span>
+          </div>
+          <div class="d-block">
+            <span class="d-lbl">OUTSTANDING ITEMS</span>
+            <div class="out-list">
+              ${d.outstanding.map(o=>`<div class="out-item${o.hot?' hot':''}">${o.text}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="next-action">
+          <span class="na-pre">NEXT ACTION</span>
+          <span class="na-text">${d.nextAction}</span>
+        </div>
+        <div class="deal-actions">
+          <a href="offer-builder.html" class="deal-btn primary" onclick="event.stopPropagation()">OPEN OFFER BUILDER</a>
+          <a href="compliance-checklist.html" class="deal-btn" onclick="event.stopPropagation()">COMPLIANCE</a>
+          <a href="calendar-integration.html" class="deal-btn" onclick="event.stopPropagation()">ADD TO CALENDAR</a>
+          <a href="client-comms.html" class="deal-btn" onclick="event.stopPropagation()">DRAFT COMMS</a>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleDeal(id) {
+  const row = document.getElementById(id);
+  const isOpen = row.classList.contains('open');
+  document.querySelectorAll('.deal-row.open').forEach(r => r.classList.remove('open'));
+  if (!isOpen) row.classList.add('open');
+}
+
+// ── CLIENTS DATA ──
+const CLIENTS = [
+  { id:'c1', name:'Marcus Torres',      initials:'MT', type:'buyer', tag:'HOT LEAD', tagClass:'tag-hot',    phone:'3125550100', email:'marcus.torres@email.com', budget:'$900K–$1.2M', areas:'Gold Coast, River North', timeline:'Active now', lastContact:'Today', note:'Needs updated pre-approval. Counter on S. Clinton expires today. High motivation but financing delay.' },
+  { id:'c2', name:'Lisa Chen',          initials:'LC', type:'buyer', tag:'BUYER',    tagClass:'tag-buyer',  phone:'7735550121', email:'lisa.chen@email.com',     budget:'$500K–$700K', areas:'Oak Park, Forest Park', timeline:'3–6 months', lastContact:'7 days ago', note:'No response in 7 days. Previously interested in 3bd properties. Re-engagement email drafted.' },
+  { id:'c3', name:'Priya Nair',         initials:'PN', type:'buyer', tag:'BUYER',    tagClass:'tag-buyer',  phone:'7735550188', email:'priya.nair@email.com',     budget:'$450K–$600K', areas:'Oak Park, Berwyn', timeline:'30–60 days', lastContact:'2 days ago', note:'Pre-consult tomorrow. Send buyer intake packet today. Under contract on 712 S. Harrison.' },
+  { id:'c4', name:'Raj & Sunita Patel', initials:'RP', type:'buyer', tag:'BUYER',    tagClass:'tag-buyer',  phone:'3125550099', email:'raj.patel@email.com',      budget:'$350K–$500K', areas:'Cicero, Berwyn', timeline:'60–90 days', lastContact:'3 weeks ago', note:'Showed 4 homes, no offer. Starting to cool. Check in to reassess priorities and timeline.' },
+  { id:'c5', name:'Johnson Family',     initials:'JF', type:'buyer', tag:'IN CLOSE', tagClass:'tag-hot',    phone:'7085550144', email:'johnson@email.com',         budget:'$489,000',    areas:'Berwyn',           timeline:'Mar 21',     lastContact:'Mar 8', note:'Closing in 11 days. HOA docs still missing. Final walkthrough Mar 18.' },
+  { id:'c6', name:'Sarah & James Mitchell', initials:'SM', type:'buyer', tag:'IN CONTRACT', tagClass:'tag-active', phone:'7085550211', email:'mitchells@email.com', budget:'$675,000', areas:'Oak Park', timeline:'Apr 4', lastContact:'Mar 7', note:'Under contract 1140 Ridgeway. Inspection review due in 3 days. Repair addendum pending.' },
+  { id:'c7', name:'DeShawn Williams',   initials:'DW', type:'buyer', tag:'IN CONTRACT', tagClass:'tag-active', phone:'3125550077', email:'dw@email.com',           budget:'$540,000',    areas:'Cicero',           timeline:'Mar 28',     lastContact:'Mar 6', note:'Under contract 712 S. Harrison. Appraisal due Mar 14. Bank statement request pending.' },
+  { id:'c8', name:'Reyes Couple',       initials:'RC', type:'buyer', tag:'BUYER',    tagClass:'tag-buyer',  phone:'7085550188', email:'reyes@email.com',           budget:'$300K–$450K', areas:'Maywood, Melrose Park', timeline:'Flexible', lastContact:'5 days ago', note:'Active showings. No fixed timeline. Good pre-approval. Looking for a 3bd with garage.' },
+  { id:'c9', name:'Amanda Strickland',  initials:'AS', type:'seller', tag:'SELLER',  tagClass:'tag-seller', phone:'7735550204', email:'astrickland@email.com',     budget:'$299,000',    areas:'Cicero',           timeline:'60–90 days', lastContact:'Mar 5', note:'Active listing 4450 W. Cermak. 12 DOM, 0 offers. Needs price adjustment conversation.' },
+  { id:'c10', name:'Robert & Kay Huang', initials:'RH', type:'both', tag:'BOTH',     tagClass:'tag-both',   phone:'7085550310', email:'rhuang@email.com',           budget:'$600K–$800K', areas:'Oak Park, Evanston', timeline:'6 months', lastContact:'2 weeks ago', note:'Selling current home + buying. Pre-qualified. Wants to list in spring. Schedule listing consult.' },
+];
+
+let clientFilter = 'all';
+let clientSearch = '';
+
+function renderClients() {
+  const f = clientFilter; const q = clientSearch.toLowerCase();
+  const filtered = CLIENTS.filter(c => {
+    const matchFilter = f==='all' || (f==='buyer'&&(c.type==='buyer'||c.type==='both')) || (f==='seller'&&(c.type==='seller'||c.type==='both')) || (f==='hot'&&(c.tag==='HOT LEAD'||c.tag==='IN CLOSE'));
+    const matchSearch = !q || c.name.toLowerCase().includes(q) || c.areas.toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+  document.getElementById('client-list').innerHTML = filtered.length ? filtered.map(c => `
+    <div>
+      <div class="client-row${openClients[c.id]?' open':''}" onclick="toggleClient('${c.id}')">
+        <div class="client-avatar">${c.initials}</div>
+        <div class="client-info">
+          <p class="client-name">${c.name}</p>
+          <div class="client-meta">
+            <span>${c.areas}</span>
+            <span>${c.budget}</span>
+            <span class="client-tag ${c.tagClass}">${c.tag}</span>
+          </div>
+        </div>
+        <span class="client-last-contact">${c.lastContact}</span>
+      </div>
+      ${openClients[c.id] ? `<div class="client-detail-row"><div class="client-detail">
+        <div class="cd-grid">
+          <div class="cd-block"><span class="cd-lbl">BUDGET</span><span class="cd-val">${c.budget}</span></div>
+          <div class="cd-block"><span class="cd-lbl">AREAS</span><span class="cd-val">${c.areas}</span></div>
+          <div class="cd-block"><span class="cd-lbl">TIMELINE</span><span class="cd-val">${c.timeline}</span></div>
+          <div class="cd-block"><span class="cd-lbl">LAST CONTACT</span><span class="cd-val">${c.lastContact}</span></div>
+        </div>
+        <p class="cd-note">${c.note}</p>
+        <div class="cd-actions">
+          <a class="cd-btn call" href="tel:+1${c.phone}">CALL</a>
+          <a class="cd-btn text" href="sms:+1${c.phone}">TEXT</a>
+          <a class="cd-btn email" href="mailto:${c.email}">EMAIL</a>
+          <a class="cd-btn" href="client-comms.html">DRAFT COMMS</a>
+          <a class="cd-btn" href="offer-builder.html">OFFER BUILDER</a>
+        </div>
+      </div></div>` : ''}
+    </div>`).join('') : '<div class="empty-state"><p>No clients match your search.</p></div>';
+}
+
+const openClients = {};
+function toggleClient(id) {
+  openClients[id] = !openClients[id];
+  renderClients();
+}
+function setClientFilter(f, btn) {
+  clientFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderClients();
+}
+function filterClients(q) { clientSearch = q; renderClients(); }
+
+// ── FILES DATA ──
+const FILES = [
+  { addr:'8812 Oak Ave, Berwyn', client:'Marcus Torres', closing:'Mar 21', docs:[
+    {name:'Purchase Agreement',done:true},{name:'HOA Documents',done:false,hot:true},{name:'Final Walkthrough',done:false},{name:'Wire Instructions',done:true},{name:'Title Commitment',done:true},
+  ]},
+  { addr:'1140 Ridgeway, Oak Park', client:'Sarah & James Mitchell', closing:'Apr 4', docs:[
+    {name:'Purchase Agreement',done:true},{name:'Inspection Report',done:true},{name:'Repair Addendum',done:false,hot:true},{name:'Appraisal',done:false},{name:'Attorney Review',done:false},
+  ]},
+  { addr:'320 S. Clinton, Chicago', client:'Marcus Torres', closing:'TBD', docs:[
+    {name:'Offer Letter',done:true},{name:'Pre-Approval Letter',done:false,hot:true},{name:'Counter Response',done:false,hot:true},{name:'Title Search',done:false},
+  ]},
+  { addr:'4450 W. Cermak, Cicero', client:'Eddie (Listing)', closing:'—', docs:[
+    {name:'Listing Agreement',done:true},{name:'Disclosure Forms',done:true},{name:'Professional Photos',done:false},{name:'Price Reduction Addendum',done:false},
+  ]},
+  { addr:'712 S. Harrison, Chicago', client:'Priya Nair', closing:'Mar 28', docs:[
+    {name:'Purchase Agreement',done:true},{name:'Appraisal',done:false},{name:'Bank Statements',done:false},{name:'Lender Approval',done:false},
+  ]},
+];
+
+function renderFiles() {
+  document.getElementById('files-grid').innerHTML = FILES.map(f => {
+    const done = f.docs.filter(d=>d.done).length;
+    const pct = Math.round(done/f.docs.length*100);
+    return `<div class="file-card" onclick="window.location.href='transaction-files.html'">
+      <p class="fc-addr">${f.addr}</p>
+      <p class="fc-client">${f.client} · Closing: ${f.closing}</p>
+      <div class="fc-progress"><div class="fc-bar" style="width:${pct}%"></div></div>
+      <p class="fc-progress-lbl">${done}/${f.docs.length} documents complete</p>
+      <div class="fc-items">
+        ${f.docs.slice(0,4).map(d=>`
+          <div class="fc-item">
+            <div class="fc-check${d.done?' done':d.hot?' hot':''}">${d.done?'✓':d.hot?'!':''}</div>
+            <span style="color:${d.hot?'var(--urgent)':d.done?'var(--muted)':'var(--off-white)'};">${d.name}</span>
+          </div>`).join('')}
+        ${f.docs.length>4?`<div class="fc-item" style="color:var(--muted);padding-left:19px;">+${f.docs.length-4} more items</div>`:''}
+      </div>
+      <div class="fc-footer">
+        <span class="fc-date">${pct}% COMPLETE</span>
+        <span class="badge ${pct===100?'badge-active':pct>60?'badge-pending':'badge-urgent'}">${pct===100?'COMPLETE':pct>60?'IN PROGRESS':'NEEDS DOCS'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TABS ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// INIT
+renderDeals();
+renderClients();
+renderFiles();
+</script>
+</body>
+</html>

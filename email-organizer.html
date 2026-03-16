@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Email Organizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root { --black:#060606;--off-black:#0e0e0e;--surface:#131313;--border:#1c1c1c;--border-light:#242424;--white:#f8f8f6;--off-white:#e8e8e4;--muted:#4a4a4a;--dim:#2a2a2a; }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { background:var(--black);color:var(--off-white);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh; }
+  body::after { content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999; }
+  nav { position:fixed;top:0;left:0;right:0;z-index:100;padding:24px 64px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.94);backdrop-filter:blur(20px); }
+  .nav-logo { font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.3em;color:var(--white); }
+  .nav-tag  { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted); }
+  .page-wrapper { padding:120px 64px 80px;max-width:860px;margin:0 auto; }
+  .page-header { margin-bottom:48px; }
+  .page-eyebrow { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--muted);margin-bottom:16px; }
+  .page-title { font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:var(--white);margin-bottom:8px; }
+  .page-sub { font-size:13px;color:var(--muted);line-height:1.7;max-width:560px; }
+
+  /* CONNECT CARDS */
+  .connect-grid { display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:48px; }
+  .connect-card { background:var(--off-black);padding:32px;display:flex;flex-direction:column;gap:16px; }
+  .provider-name { font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.15em;color:var(--off-white); }
+  .provider-desc { font-size:12px;color:var(--muted);line-height:1.6; }
+  .btn-connect { display:inline-block;background:none;border:1px solid var(--border-light);color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;padding:10px 20px;cursor:pointer;transition:all 0.15s;align-self:flex-start; }
+  .btn-connect:hover { border-color:var(--off-white);color:var(--off-white); }
+  .btn-connect.connected { border-color:#203a20;color:#60a060;cursor:default; }
+
+  /* HOW IT WORKS */
+  .how-section { margin-bottom:48px; }
+  .section-label { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--muted);margin-bottom:24px; }
+  .step-list { display:flex;flex-direction:column;gap:0;border:1px solid var(--border); }
+  .step-row { display:grid;grid-template-columns:40px 1fr;gap:0;border-bottom:1px solid var(--border); }
+  .step-row:last-child { border-bottom:none; }
+  .step-num { font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);padding:16px 0 16px 20px;border-right:1px solid var(--border); }
+  .step-text { padding:16px 20px;font-size:13px;color:var(--off-white);line-height:1.6; }
+
+  /* DEMO SIMULATION */
+  .demo-section { border:1px solid var(--border);background:var(--off-black); }
+  .demo-header { padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center; }
+  .demo-title { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--muted); }
+  .btn-demo { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;padding:8px 16px;background:var(--off-white);color:var(--black);border:none;cursor:pointer;transition:opacity 0.15s; }
+  .btn-demo:hover { opacity:0.85; }
+  .demo-body { padding:24px; }
+  .email-item { display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border); }
+  .email-item:last-child { border-bottom:none; }
+  .email-from { font-size:12px;color:var(--off-white); }
+  .email-subj { font-size:11px;color:var(--muted);margin-top:2px; }
+  .folder-tag { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;padding:3px 8px;border:1px solid var(--border-light);color:var(--muted);white-space:nowrap;transition:all 0.3s; }
+  .folder-tag.assigned { border-color:#203a20;color:#60a060; }
+
+  /* OAUTH NOTE */
+  .oauth-note { margin-top:32px;padding:16px 20px;border:1px solid var(--border-light);font-size:12px;color:var(--muted);line-height:1.6; }
+  .oauth-note strong { color:var(--off-white);font-weight:400; }
+
+  @media (max-width:640px) { nav{padding:20px 24px;} .page-wrapper{padding:100px 24px 60px;} .connect-grid{grid-template-columns:1fr;} }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-tag">EMAIL ORGANIZER</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <p class="page-eyebrow">Integration</p>
+    <h1 class="page-title">Email Auto-Organizer</h1>
+    <p class="page-sub">Connect Gmail or Outlook. Meridian creates a folder per transaction and routes incoming emails by address and client name — automatically.</p>
+  </div>
+
+  <!-- CONNECT -->
+  <div class="connect-grid">
+    <div class="connect-card">
+      <p class="provider-name">GMAIL</p>
+      <p class="provider-desc">Connects via Google OAuth 2.0. Requires Gmail API scope: gmail.modify. Folders created as Gmail labels.</p>
+      <button class="btn-connect" id="btn-gmail" onclick="connectProvider('gmail')">CONNECT GMAIL</button>
+    </div>
+    <div class="connect-card">
+      <p class="provider-name">OUTLOOK / MICROSOFT 365</p>
+      <p class="provider-desc">Connects via Microsoft OAuth 2.0 (MSAL). Requires Mail.ReadWrite permission. Folders created as Outlook mail folders.</p>
+      <button class="btn-connect" id="btn-outlook" onclick="connectProvider('outlook')">CONNECT OUTLOOK</button>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-section">
+    <p class="section-label">HOW IT WORKS</p>
+    <div class="step-list">
+      <div class="step-row"><span class="step-num">01</span><span class="step-text">You connect your email account (Gmail or Outlook) via OAuth. Meridian never stores your email password.</span></div>
+      <div class="step-row"><span class="step-num">02</span><span class="step-text">For each active transaction in your Meridian file system, a folder is created: <strong style="color:var(--off-white)">8812 Oak Ave — Johnson Deal</strong></span></div>
+      <div class="step-row"><span class="step-num">03</span><span class="step-text">Incoming emails are scanned for matching property addresses, client names, and known parties (title company, lender, co-agent). Matches are moved automatically.</span></div>
+      <div class="step-row"><span class="step-num">04</span><span class="step-text">Unmatched emails remain in your inbox. Meridian never moves emails it isn't confident about — a 90%+ confidence threshold applies.</span></div>
+      <div class="step-row"><span class="step-num">05</span><span class="step-text">When a transaction closes, the folder is archived. The thread history stays intact and searchable.</span></div>
+    </div>
+  </div>
+
+  <!-- DEMO -->
+  <div class="demo-section">
+    <div class="demo-header">
+      <span class="demo-title">ROUTING DEMO — SIMULATE INBOX</span>
+      <button class="btn-demo" onclick="runDemo()">RUN DEMO</button>
+    </div>
+    <div class="demo-body">
+      <div id="demo-emails">
+        <p style="font-size:12px;color:var(--muted)">Click "Run Demo" to simulate Meridian scanning an inbox and routing emails to transaction folders.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="oauth-note">
+    <strong>Setup required before deployment:</strong> Register an OAuth app at <strong>console.cloud.google.com</strong> (Gmail) and <strong>portal.azure.com</strong> (Outlook). Set redirect URI to your Vercel deployment URL. Add <strong>GMAIL_CLIENT_ID</strong>, <strong>GMAIL_CLIENT_SECRET</strong>, <strong>OUTLOOK_CLIENT_ID</strong>, and <strong>OUTLOOK_CLIENT_SECRET</strong> to your environment variables. See <strong>/api/auth/gmail.js</strong> and <strong>/api/auth/outlook.js</strong> in the Meridian repo for the handler templates.
+  </div>
+</div>
+
+<script>
+const SAMPLE_EMAILS = [
+  { from: 'Sarah Mills (Compass)',    subject: 'Re: 8812 Oak Ave — counter offer received', match: '8812 Oak Ave — Johnson Deal' },
+  { from: 'Chase Home Lending',       subject: 'Loan commitment — 1140 Ridgeway, Oak Park', match: '1140 Ridgeway — Patel Deal' },
+  { from: 'Oak Park Title Co.',       subject: 'Closing docs ready for Ridgeway transaction', match: '1140 Ridgeway — Patel Deal' },
+  { from: 'Marcus Torres',            subject: 'Quick question about the Clinton St offer', match: '320 S. Clinton — Torres Deal' },
+  { from: 'Berwyn Water Department',  subject: 'Final water bill — 8812 Oak Ave', match: '8812 Oak Ave — Johnson Deal' },
+  { from: 'newsletter@redfin.com',    subject: 'This week in real estate', match: null },
+  { from: 'Angela Rossi',             subject: 'RE: 4450 Cermak — open house feedback', match: '4450 W. Cermak — Rossi Listing' },
+];
+
+function connectProvider(provider) {
+  const btn = document.getElementById('btn-' + provider);
+  btn.textContent = 'CONNECTING…';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = provider === 'gmail' ? '✓ GMAIL CONNECTED' : '✓ OUTLOOK CONNECTED';
+    btn.classList.add('connected');
+    btn.disabled = false;
+  }, 1500);
+}
+
+function runDemo() {
+  const container = document.getElementById('demo-emails');
+  container.innerHTML = SAMPLE_EMAILS.map((e, i) => `
+    <div class="email-item" id="email-${i}">
+      <div>
+        <p class="email-from">${e.from}</p>
+        <p class="email-subj">${e.subject}</p>
+      </div>
+      <span class="folder-tag" id="tag-${i}">${e.match ? 'ROUTING…' : 'INBOX'}</span>
+    </div>
+  `).join('');
+
+  SAMPLE_EMAILS.forEach((e, i) => {
+    if (e.match) {
+      setTimeout(() => {
+        const tag = document.getElementById('tag-' + i);
+        tag.textContent = e.match;
+        tag.classList.add('assigned');
+      }, 400 + i * 300);
+    }
+  });
+}
+</script>
+</body>
+</html>

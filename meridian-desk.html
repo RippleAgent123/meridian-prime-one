@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:#060606; --off-black:#0e0e0e; --surface:#131313;
+    --border:#1c1c1c; --border-light:#242424;
+    --white:#f8f8f6; --off-white:#e8e8e4; --muted:#4a4a4a; --dim:#2a2a2a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--black); color:var(--off-white); font-family:'DM Sans',sans-serif; font-weight:300; min-height:100vh; }
+
+  body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; }
+
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    padding:24px 64px; display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--border); background:rgba(6,6,6,0.94); backdrop-filter:blur(20px);
+  }
+  .nav-logo { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; letter-spacing:0.3em; color:var(--white); }
+  .nav-right { display:flex; align-items:center; gap:16px; }
+  .nav-agent { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--muted); }
+  .btn-launch {
+    font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.15em;
+    padding:9px 20px; background:var(--off-white); color:var(--black); border:none; cursor:pointer; transition:opacity 0.2s;
+  }
+  .btn-launch:hover { opacity:0.85; }
+
+  /* HERO */
+  .hero { padding:140px 64px 64px; max-width:1060px; margin:0 auto; }
+  .hero-eyebrow { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.3em; color:var(--muted); margin-bottom:20px; }
+  .hero-title { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,6vw,80px); font-weight:300; color:var(--white); line-height:1.05; margin-bottom:20px; }
+  .hero-sub { font-size:14px; color:var(--muted); line-height:1.7; max-width:540px; margin-bottom:40px; }
+  .hero-actions { display:flex; gap:12px; flex-wrap:wrap; }
+  .btn-primary { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.18em; padding:14px 32px; background:var(--off-white); color:var(--black); border:none; cursor:pointer; transition:opacity 0.2s; text-decoration:none; display:inline-block; }
+  .btn-primary:hover { opacity:0.85; }
+  .btn-secondary { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.18em; padding:14px 32px; background:none; border:1px solid var(--border-light); color:var(--muted); cursor:pointer; transition:all 0.15s; text-decoration:none; display:inline-block; }
+  .btn-secondary:hover { border-color:var(--off-white); color:var(--off-white); }
+
+  /* TOOL GRID */
+  .tools-section { padding:0 64px 80px; max-width:1060px; margin:0 auto; }
+  .tools-section-label { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.25em; color:var(--muted); margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+
+  .tool-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:60px; }
+
+  .tool-card {
+    background:var(--off-black); padding:28px; display:flex; flex-direction:column; gap:0;
+    text-decoration:none; cursor:pointer; transition:background 0.15s; position:relative;
+  }
+  .tool-card:hover { background:var(--surface); }
+  .tool-card-label { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--muted); margin-bottom:10px; }
+  .tool-card-name { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; color:var(--white); margin-bottom:8px; }
+  .tool-card-desc { font-size:12px; color:var(--muted); line-height:1.6; flex:1; margin-bottom:16px; }
+  .tool-card-arrow { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); transition:color 0.15s; }
+  .tool-card:hover .tool-card-arrow { color:var(--off-white); }
+
+  .tool-card.featured { grid-column:span 2; }
+  .tool-card.featured .tool-card-name { font-size:28px; }
+
+  /* STATUS BADGE */
+  .status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; }
+  .status-dot.live    { background:#60a060; }
+  .status-dot.backend { background:#a0a060; }
+  .tool-status { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.1em; color:var(--muted); position:absolute; top:20px; right:20px; display:flex; align-items:center; }
+
+  /* INTEGRATION NOTE */
+  .integration-note {
+    padding:24px 28px; border:1px solid var(--border-light); background:rgba(255,255,255,0.01);
+    margin-bottom:60px;
+  }
+  .int-title { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.2em; color:var(--muted); margin-bottom:16px; }
+  .int-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .int-item { display:flex; flex-direction:column; gap:4px; }
+  .int-label { font-size:11px; color:var(--off-white); }
+  .int-desc { font-size:11px; color:var(--muted); line-height:1.5; }
+
+  /* FOOTER */
+  footer { padding:28px 64px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .footer-logo { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:0.3em; color:var(--dim); }
+  .footer-meta { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.1em; color:var(--dim); }
+
+  @media (max-width:768px) {
+    nav { padding:20px 24px; }
+    .hero { padding:100px 24px 48px; }
+    .tools-section { padding:0 24px 60px; }
+    .tool-grid { grid-template-columns:1fr; }
+    .tool-card.featured { grid-column:span 1; }
+    .int-grid { grid-template-columns:1fr 1fr; }
+    footer { padding:20px 24px; flex-direction:column; gap:8px; align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">MERIDIAN</span>
+  <div class="nav-right">
+    <span class="nav-agent" id="nav-agent-name"></span>
+    <a class="btn-launch" href="index.html">OPEN DASHBOARD</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-eyebrow">AI CHIEF OF STAFF FOR REAL ESTATE</p>
+  <h1 class="hero-title">Every tool<br>in one place.</h1>
+  <p class="hero-sub">Meridian handles your transactions, clients, communications, compliance, and market intelligence — so you stay in front of what matters.</p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="signup.html">Get Started — Free Trial</a>
+    <a class="btn-secondary" href="index.html">Open Dashboard</a>
+    <a class="btn-secondary" href="meridian-onboarding.html">Agent Profile</a>
+    <a class="btn-secondary" href="mobile-dashboard.html">Mobile</a>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="tools-section">
+
+  <p class="tools-section-label">CORE PLATFORM</p>
+  <div class="tool-grid">
+
+    <a class="tool-card featured" href="index.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">COMMAND CENTER</p>
+      <p class="tool-card-name">Professional Dashboard</p>
+      <p class="tool-card-desc">Collapsible sidebar, global search, notification bell, drag-to-rearrange widgets, Meridian Score, deal overview, follow-ups, and live market data — all in one view.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="mobile-dashboard.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">MOBILE</p>
+      <p class="tool-card-name">Mobile Dashboard</p>
+      <p class="tool-card-desc">Thumb-friendly layout. Bottom nav, FAB quick actions, swipe sections. Works on iOS and Android browsers — no app needed.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+  </div>
+
+  <p class="tools-section-label">AGENT SETUP</p>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="signup.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">ACQUISITION</p>
+      <p class="tool-card-name">Sign Up</p>
+      <p class="tool-card-desc">Agent registration form with plan selection (Core $79/mo · Pro $149/mo), 14-day free trial, Stripe Checkout integration, and post-payment redirect to onboarding.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="meridian-onboarding.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">ONBOARDING</p>
+      <p class="tool-card-name">Agent Profile</p>
+      <p class="tool-card-desc">Name, brokerage, market focus, communication style, client type, price range, top goals. Outputs JSON profile that feeds all AI tools.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="trial-ui.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">BILLING</p>
+      <p class="tool-card-name">Trial Limits UI</p>
+      <p class="tool-card-desc">Padlocked features, usage counters, upgrade CTAs. Shows exactly what's included at each tier — Core vs Pro.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="agent-performance.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">ANALYTICS</p>
+      <p class="tool-card-name">Performance</p>
+      <p class="tool-card-desc">Active listings, leads, closings this month, Meridian Score with breakdown, follow-ups due today.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+  </div>
+
+  <p class="tools-section-label">TRANSACTIONS & DEALS</p>
+  <div class="tool-grid">
+
+    <a class="tool-card featured" href="pipeline.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">PIPELINE + CRM</p>
+      <p class="tool-card-name">Pipeline & Clients</p>
+      <p class="tool-card-desc">All-in-one view: active deals with expandable cards, full CRM with 10 client records (search, filter by type), and per-deal file system with document checklists — all in one page.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="transaction-files.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">FILE SYSTEM</p>
+      <p class="tool-card-name">Transaction Files</p>
+      <p class="tool-card-desc">Per-deal file: closing date, due dates, document checklist (green/red status), outstanding items, next recommended action.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="transaction-dashboard.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">PIPELINE</p>
+      <p class="tool-card-name">Transaction Clarity</p>
+      <p class="tool-card-desc">Expandable deal cards. Stage, last contact, outstanding items, and Meridian's next recommended action — per deal.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="offer-builder.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">OFFER TOOL</p>
+      <p class="tool-card-name">Offer Builder</p>
+      <p class="tool-card-desc">Address, price, terms, contingencies in. Offer summary, agent cover letter, and client explainer email — all personalized to your communication style.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+  </div>
+
+  <p class="tools-section-label">CLIENTS & COMMUNICATION</p>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="lead-intake.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">LEAD MANAGEMENT</p>
+      <p class="tool-card-name">Lead Intake</p>
+      <p class="tool-card-desc">Budget, timeline, neighborhoods, must-haves, deal breakers. Outputs clean client profile + recommended follow-up cadence.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="client-comms.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">TEMPLATES</p>
+      <p class="tool-card-name">Client Communications</p>
+      <p class="tool-card-desc">6 pre-built templates: offer accepted/rejected, inspection issues, closing delay, price reduction, post-close. Personalized to your style and client name.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="email-organizer.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">INTEGRATION</p>
+      <p class="tool-card-name">Email Organizer</p>
+      <p class="tool-card-desc">Connects Gmail or Outlook via OAuth. Creates folders per transaction. Routes emails by address and client name detection. Demo included.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+  </div>
+
+  <p class="tools-section-label">INTELLIGENCE & MARKET</p>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="market-pulse.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">MARKET DATA</p>
+      <p class="tool-card-name">Market Pulse</p>
+      <p class="tool-card-desc">Zip code or neighborhood in. Days on market, median price, list-to-sale ratio, inventory, and Meridian's buyer vs seller market recommendation out.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="compliance-checklist.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">DUE DILIGENCE</p>
+      <p class="tool-card-name">Compliance Checklist</p>
+      <p class="tool-card-desc">Address + property type in. Municipality-specific checklist (Berwyn, Cicero, Chicago, Oak Park) with required inspections, disclosures, and non-conforming unit flags.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="calendar-integration.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">CALENDAR</p>
+      <p class="tool-card-name">Smart Calendar</p>
+      <p class="tool-card-desc">Pulls closing dates, inspection deadlines, and follow-ups from transactions. Auto-creates events in Google Calendar or Outlook. P1/P2/P3 priority system.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+  </div>
+
+  <p class="tools-section-label">BACKEND & API</p>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="email-template.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">TRANSACTIONAL EMAIL</p>
+      <p class="tool-card-name">Welcome Email</p>
+      <p class="tool-card-desc">HTML email template. Triggers post-payment. Subject: "Welcome to Meridian — You're in." Agent name, tier, unlocked features, login link, next step.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <a class="tool-card" href="token-tracker.html">
+      <span class="tool-status"><span class="status-dot live"></span>LIVE</span>
+      <p class="tool-card-label">COST MANAGEMENT</p>
+      <p class="tool-card-name">Token Tracker</p>
+      <p class="tool-card-desc">Per-agent token usage, daily chart, monthly cost projection, threshold alerts. Keeps AI costs visible and under control.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+    <div class="tool-card" style="cursor:default;">
+      <span class="tool-status"><span class="status-dot backend"></span>SERVERLESS</span>
+      <p class="tool-card-label">BACKEND FILES</p>
+      <p class="tool-card-name">API Layer</p>
+      <p class="tool-card-desc"><strong style="color:var(--off-white);font-weight:400;">webhook.js</strong> — Stripe payment handler<br><strong style="color:var(--off-white);font-weight:400;">email-parser.js</strong> — Thread → JSON via Haiku<br><strong style="color:var(--off-white);font-weight:400;">bad-data-filter.js</strong> — Validation layer</p>
+      <span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);">DEPLOY TO /api/</span>
+    </div>
+
+    <a class="tool-card" href="admin.html">
+      <span class="tool-status"><span class="status-dot backend"></span>RESTRICTED</span>
+      <p class="tool-card-label">INTERNAL ONLY</p>
+      <p class="tool-card-name">Admin Dashboard</p>
+      <p class="tool-card-desc">Password-protected. All agents, tier, payment status, last login, Meridian Score, token usage, MRR, churn flags. Not visible in agent navigation.</p>
+      <span class="tool-card-arrow">OPEN →</span>
+    </a>
+
+  </div>
+
+  <!-- INTEGRATION LAYER -->
+  <p class="tools-section-label">INTEGRATION LAYER</p>
+  <div class="integration-note">
+    <p class="int-title">HOW EVERYTHING CONNECTS</p>
+    <div class="int-grid">
+      <div class="int-item">
+        <p class="int-label">Profile → All AI</p>
+        <p class="int-desc">Agent onboarding profile (communication style, markets, goals) feeds into all AI outputs automatically via localStorage.</p>
+      </div>
+      <div class="int-item">
+        <p class="int-label">Email → Transactions</p>
+        <p class="int-desc">Email parser output feeds transaction file system. Parsed offer status, inspection items, and closing dates populate deal files.</p>
+      </div>
+      <div class="int-item">
+        <p class="int-label">Transactions → Calendar</p>
+        <p class="int-desc">Transaction due dates and closing dates feed calendar integration automatically. P1/P2/P3 priority assigned by event type.</p>
+      </div>
+      <div class="int-item">
+        <p class="int-label">Leads → Follow-ups</p>
+        <p class="int-desc">Lead intake timeline drives follow-up cadence. ASAP leads surface immediately. Long-term leads enter nurture queue.</p>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<footer>
+  <span class="footer-logo">MERIDIAN</span>
+  <div style="display:flex;align-items:center;gap:24px;">
+    <a href="signup.html" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--dim);text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='var(--muted)'" onmouseout="this.style.color='var(--dim)'">NEW AGENT</a>
+    <a href="admin.html" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--dim);text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='var(--muted)'" onmouseout="this.style.color='var(--dim)'">ADMIN</a>
+    <span class="footer-meta" id="footer-date"></span>
+  </div>
+</footer>
+
+<script>
+// Load agent name
+(function() {
+  try {
+    const p = JSON.parse(localStorage.getItem('meridian_agent_profile'));
+    if (p?.agent?.name) {
+      document.getElementById('nav-agent-name').textContent = p.agent.name.toUpperCase();
+    }
+  } catch {}
+  document.getElementById('footer-date').textContent =
+    'meridian-prime-one.vercel.app · ' + new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

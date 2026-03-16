@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MERIDIAN — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0A0A0A; --bg-card:#161616; --bg-card-hover:#1C1C1C; --bg-surface:#111111; --sidebar-bg:#0E0E0E;
+    --border:#222222; --border-light:#2E2E2E;
+    --text-primary:#F0F0EE; --text-secondary:rgba(240,240,238,0.55); --text-tertiary:rgba(240,240,238,0.28);
+    --urgent:#C86060;   --urgent-bg:rgba(200,96,96,0.10);
+    --active:#60A878;   --active-bg:rgba(96,168,120,0.10);
+    --pending:#C09850;  --pending-bg:rgba(192,152,80,0.10);
+    --info:#6090B8;     --info-bg:rgba(96,144,184,0.10);
+    --sidebar-w:210px; --sidebar-collapsed:52px;
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+    --metric-xl:58px; --metric-lg:43px; --metric-md:32px;
+    --body-size:14px; --label-size:12px;
+  }
+  .density-compact   { --metric-xl:44px; --metric-lg:32px; --metric-md:24px; --body-size:12px; --label-size:11px; }
+  .density-comfortable { --metric-xl:66px; --metric-lg:50px; --metric-md:38px; --body-size:15px; --label-size:13px; }
+
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{background:var(--bg);color:var(--text-primary);font-family:'Inter',sans-serif;font-weight:400;display:flex;font-size:var(--body-size);}
+  body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+
+  /* SIDEBAR */
+  .sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden;}
+  .sidebar.collapsed{width:var(--sidebar-collapsed);}
+  .sidebar-top{display:flex;align-items:center;justify-content:space-between;padding:16px 14px;border-bottom:1px solid var(--border);height:48px;flex-shrink:0;}
+  .sidebar-logo{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.25em;color:var(--text-primary);white-space:nowrap;overflow:hidden;}
+  .sidebar.collapsed .sidebar-logo{opacity:0;}
+  .btn-collapse{background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;display:flex;align-items:center;justify-content:center;transition:color .15s;flex-shrink:0;}
+  .btn-collapse:hover{color:var(--text-primary);}
+  .collapse-icon{transition:transform .2s;}
+  .sidebar.collapsed .collapse-icon{transform:rotate(180deg);}
+  .nav-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 0;}
+  .nav-list::-webkit-scrollbar{width:0;}
+  .nav-section-label{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--text-tertiary);padding:16px 14px 6px;white-space:nowrap;overflow:hidden;}
+  .sidebar.collapsed .nav-section-label{opacity:0;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;color:var(--text-tertiary);text-decoration:none;cursor:pointer;transition:all .15s;border-left:2px solid transparent;white-space:nowrap;}
+  .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,.03);}
+  .nav-item.active{color:var(--text-primary);border-left-color:var(--text-primary);background:rgba(255,255,255,.04);}
+  .nav-icon{width:16px;height:16px;flex-shrink:0;color:currentColor;opacity:.7;}
+  .nav-item.active .nav-icon{opacity:1;}
+  .nav-label{font-size:11px;font-weight:600;letter-spacing:.06em;overflow:hidden;}
+  .sidebar.collapsed .nav-label{opacity:0;width:0;}
+  .sidebar-bottom{padding:10px 0;border-top:1px solid var(--border);flex-shrink:0;}
+
+  /* MAIN */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+  /* TOPBAR */
+  .topbar{height:48px;background:var(--sidebar-bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 18px;flex-shrink:0;}
+  .breadcrumb{font-size:11px;color:var(--text-tertiary);white-space:nowrap;font-weight:500;letter-spacing:.04em;}
+  .breadcrumb-sep{margin:0 5px;opacity:.4;}
+  .breadcrumb-current{color:var(--text-secondary);}
+  .search-wrap{flex:1;max-width:340px;position:relative;}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-tertiary);}
+  .search-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:12px;padding:6px 10px 6px 30px;border-radius:4px;outline:none;transition:border .15s;}
+  .search-input::placeholder{color:var(--text-tertiary);}
+  .search-input:focus{border-color:var(--border-light);}
+  .search-results{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border-light);border-radius:4px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;}
+  .search-results.open{display:block;}
+  .sr-item{padding:9px 13px;font-size:12px;cursor:pointer;color:var(--text-secondary);display:flex;gap:10px;align-items:center;transition:background .1s;}
+  .sr-item:hover{background:var(--bg-card-hover);color:var(--text-primary);}
+  .sr-type{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--text-tertiary);min-width:80px;}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .density-toggle{display:flex;gap:2px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px;}
+  .density-btn{background:none;border:none;cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--text-tertiary);padding:3px 6px;border-radius:3px;transition:all .15s;}
+  .density-btn.active{background:rgba(255,255,255,.1);color:var(--text-primary);}
+  .btn-morning{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.08em;padding:6px 12px;background:rgba(255,255,255,.07);border:1px solid var(--border-light);color:var(--text-secondary);cursor:pointer;border-radius:4px;transition:all .15s;white-space:nowrap;}
+  .btn-morning:hover{background:rgba(255,255,255,.12);color:var(--text-primary);}
+  .notif-btn{position:relative;background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;display:flex;transition:color .15s;}
+  .notif-btn:hover{color:var(--text-primary);}
+  .notif-badge{display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:var(--urgent);border-radius:50%;border:2px solid var(--sidebar-bg);}
+  .notif-badge.has-alerts{display:block;}
+  .agent-chip{display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background .15s;}
+  .agent-chip:hover{background:rgba(255,255,255,.06);}
+  .agent-avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:var(--text-primary);flex-shrink:0;}
+  .agent-chip-name{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text-secondary);}
+
+  /* ALERT STRIP */
+  .alert-strip{background:var(--urgent-bg);border:1px solid rgba(200,96,96,.2);border-radius:4px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0;}
+  .alert-dot{width:6px;height:6px;border-radius:50%;background:var(--urgent);flex-shrink:0;animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .alert-text{font-size:var(--label-size);color:var(--text-secondary);flex:1;}
+  .alert-text strong{color:var(--text-primary);}
+  .alert-action{font-size:10px;font-weight:700;letter-spacing:.08em;padding:4px 10px;background:none;border:1px solid rgba(200,96,96,.3);color:var(--urgent);cursor:pointer;border-radius:3px;transition:all .15s;white-space:nowrap;}
+  .alert-action:hover{background:var(--urgent-bg);}
+
+  /* SETTINGS BAR */
+  .widget-settings-bar{display:flex;align-items:center;justify-content:space-between;padding:0 0 10px;margin-bottom:10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .ws-info{font-size:var(--label-size);font-weight:500;letter-spacing:.04em;color:var(--text-tertiary);}
+  .btn-customize{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--text-tertiary);background:none;border:none;cursor:pointer;transition:color .15s;}
+  .btn-customize:hover{color:var(--text-primary);}
+
+  /* STAT STRIP */
+  .stat-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:10px;flex-shrink:0;}
+  .stat-cell{background:var(--bg-card);padding:14px 16px;cursor:default;transition:background .15s;}
+  .stat-cell:hover{background:var(--bg-card-hover);}
+  .stat-label{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--text-tertiary);margin-bottom:8px;}
+  .stat-num{font-family:'DM Mono',monospace;font-size:var(--metric-md);font-weight:500;color:var(--text-primary);line-height:1;}
+  .stat-sub{font-size:11px;color:var(--text-secondary);margin-top:4px;}
+  .stat-sub-up{color:var(--active);}
+  .stat-sub-alert{color:var(--pending);}
+
+  /* STATUS BADGES */
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;flex-shrink:0;}
+  .dot-urgent{background:var(--urgent);}
+  .dot-pending{background:var(--pending);}
+  .dot-active{background:var(--active);}
+  .badge{font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:2px;white-space:nowrap;}
+  .badge-urgent {background:var(--urgent-bg); color:var(--urgent); border:1px solid rgba(200,96,96,.2);}
+  .badge-pending{background:var(--pending-bg);color:var(--pending);border:1px solid rgba(192,152,80,.2);}
+  .badge-active {background:var(--active-bg); color:var(--active); border:1px solid rgba(96,168,120,.2);}
+  .badge-info   {background:var(--info-bg);   color:var(--info);   border:1px solid rgba(96,144,184,.2);}
+
+  /* PANELS */
+  .panel{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;}
+  .panel-header{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .panel-title{font-size:var(--label-size);font-weight:700;letter-spacing:.1em;color:var(--text-tertiary);}
+  .panel-action{font-size:10px;font-weight:700;color:var(--text-tertiary);background:none;border:none;cursor:pointer;letter-spacing:.06em;transition:color .15s;}
+  .panel-action:hover{color:var(--text-primary);}
+
+  /* INBOX */
+  .inbox-item{display:grid;grid-template-columns:3px 1fr auto;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+  .inbox-item:last-child{border-bottom:none;}
+  .inbox-item:hover{background:var(--bg-card-hover);}
+  .inbox-pri{border-radius:2px;align-self:stretch;min-height:34px;}
+  .pri-urgent{background:rgba(200,96,96,.7);}
+  .pri-deadline{background:rgba(192,152,80,.8);}
+  .pri-counter{background:rgba(96,144,184,.7);}
+  .pri-action{background:rgba(192,152,80,.5);}
+  .pri-normal{background:var(--border-light);}
+  .inbox-body{min-width:0;}
+  .inbox-from{font-size:var(--label-size);font-weight:600;color:var(--text-primary);margin-bottom:1px;}
+  .inbox-subj{font-size:var(--label-size);color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;}
+  .inbox-prev{font-size:11px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .inbox-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+  .inbox-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-tertiary);}
+  .inbox-tag{font-size:8px;font-weight:700;letter-spacing:.07em;padding:2px 5px;border-radius:2px;white-space:nowrap;}
+  .tag-urgent{background:var(--urgent-bg);color:var(--urgent);}
+  .tag-action{background:var(--pending-bg);color:var(--pending);}
+  .tag-counter{background:var(--info-bg);color:var(--info);}
+  .tag-auto{background:rgba(255,255,255,.05);color:var(--text-tertiary);}
+
+  /* PIPELINE ITEMS */
+  .pip-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+  .pip-item:last-child{border-bottom:none;}
+  .pip-item:hover{background:var(--bg-card-hover);}
+  .pip-stage{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.09em;padding:3px 7px;flex-shrink:0;width:78px;text-align:center;border-radius:2px;}
+  .pip-lead{background:var(--info-bg);color:var(--info);}
+  .pip-showing{background:var(--active-bg);color:var(--active);}
+  .pip-contract{background:var(--pending-bg);color:var(--pending);}
+  .pip-closing{background:var(--urgent-bg);color:var(--urgent);}
+  .pip-body{flex:1;min-width:0;}
+  .pip-name{font-size:var(--label-size);font-weight:600;color:var(--text-primary);}
+  .pip-addr{font-size:11px;color:var(--text-secondary);margin-top:1px;}
+  .pip-deadline{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-tertiary);flex-shrink:0;}
+  .pip-deadline.soon{color:var(--pending);}
+  .pip-deadline.urgent{color:var(--urgent);}
+
+  /* ACTIVE DEALS (in inbox panel row) */
+  .deal-row{display:grid;grid-template-columns:4px 1fr auto;align-items:center;border-bottom:1px solid var(--border);}
+  .deal-row:last-child{border-bottom:none;}
+  .deal-stripe{height:100%;min-height:50px;}
+  .deal-body{padding:11px 12px;}
+  .deal-name{font-size:var(--label-size);font-weight:500;color:var(--text-primary);}
+  .deal-meta{font-size:var(--label-size);color:var(--text-secondary);margin-top:2px;display:flex;align-items:center;}
+  .deal-badge{padding:0 12px;}
+
+  /* THREE COLUMN */
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+  /* MARKET PULSE */
+  .mp-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);}
+  .mp-row:last-child{border-bottom:none;}
+  .mp-label{font-size:var(--label-size);color:var(--text-secondary);}
+  .mp-right{text-align:right;}
+  .mp-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--text-primary);line-height:1;}
+  .mp-change{font-family:'DM Mono',monospace;font-size:10px;margin-top:2px;}
+  .mp-up{color:var(--active);}
+  .mp-dn{color:var(--urgent);}
+  .mp-flat{color:var(--text-tertiary);}
+
+  /* COMPACT FOLLOW-UP */
+  .fq-item{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+  .fq-item:last-child{border-bottom:none;}
+  .fq-avatar{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-secondary);flex-shrink:0;border:1px solid var(--border);}
+  .fq-body{flex:1;min-width:0;}
+  .fq-top{display:flex;align-items:center;gap:6px;margin-bottom:1px;}
+  .fq-name{font-size:var(--label-size);font-weight:600;color:var(--text-primary);}
+  .fq-ctx{font-size:11px;color:var(--text-secondary);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fq-actions{display:flex;gap:4px;margin-top:6px;}
+  .fq-btn{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.07em;padding:3px 7px;border:1px solid;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;transition:all .15s;}
+  .fq-call{border-color:rgba(96,168,120,.3);color:var(--active);}
+  .fq-call:hover{background:var(--active-bg);}
+  .fq-text{border-color:rgba(192,152,80,.3);color:var(--pending);}
+  .fq-text:hover{background:var(--pending-bg);}
+  .fq-email{border-color:rgba(96,144,184,.3);color:var(--info);}
+  .fq-email:hover{background:var(--info-bg);}
+
+  /* MERIDIAN LIVE */
+  .terminal{background:var(--bg);border:1px solid var(--border-light);border-radius:4px;display:flex;flex-direction:column;overflow:hidden;}
+  .t-bar{background:var(--bg-surface);padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px;flex-shrink:0;}
+  .t-dot{width:7px;height:7px;border-radius:50%;background:var(--border-light);}
+  .t-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--text-tertiary);margin-left:6px;}
+  .t-body{padding:14px 16px;font-family:'DM Mono',monospace;font-size:11px;line-height:1.95;flex:1;overflow:hidden;}
+  .t-prompt{color:var(--border-light);}
+  .t-cmd{color:var(--text-primary);}
+  .t-note{color:var(--text-secondary);}
+  .t-ok{color:var(--active);}
+  .t-alert{color:var(--pending);}
+  .t-urgent{color:var(--urgent);}
+  .cursor{display:inline-block;width:6px;height:11px;background:var(--text-primary);opacity:.6;animation:blink 1.2s step-end infinite;vertical-align:middle;}
+  @keyframes blink{0%,100%{opacity:.6}50%{opacity:0}}
+
+  /* DEADLINES */
+  .deadline-row{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);}
+  .deadline-row:last-child{border-bottom:none;}
+  .deadline-left{display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;min-width:36px;}
+  .deadline-day{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--text-primary);line-height:1;}
+  .deadline-mon{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--text-tertiary);}
+  .deadline-body{flex:1;}
+  .deadline-text{font-size:var(--label-size);font-weight:500;color:var(--text-primary);}
+  .deadline-sub{font-size:11px;color:var(--text-secondary);margin-top:2px;}
+  .deadline-tag{flex-shrink:0;align-self:flex-start;margin-top:2px;}
+
+  /* CONTENT READY TO POST */
+  .content-post-item{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+  .content-post-item:last-child{border-bottom:none;}
+  .content-post-item:hover{background:var(--bg-card-hover);}
+  .content-platform{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--text-tertiary);margin-bottom:4px;text-transform:uppercase;}
+  .content-post-text{font-size:var(--label-size);color:var(--text-primary);line-height:1.55;font-style:italic;}
+  .content-post-actions{display:flex;gap:5px;margin-top:7px;}
+  .cp-btn{font-size:9px;font-weight:700;letter-spacing:.06em;padding:4px 10px;background:none;border:1px solid var(--border-light);color:var(--text-secondary);cursor:pointer;border-radius:2px;transition:all .15s;}
+  .cp-btn:hover{color:var(--text-primary);border-color:var(--text-secondary);}
+  .cp-btn.copied{color:var(--active);border-color:rgba(96,168,120,.3);}
+
+  /* PAGE LAYOUT */
+  .page-content{flex:1;overflow-y:auto;padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;}
+  .page-content::-webkit-scrollbar{width:3px;}
+  .page-content::-webkit-scrollbar-track{background:transparent;}
+  .page-content::-webkit-scrollbar-thumb{background:var(--border-light);}
+  .page-header{flex-shrink:0;}
+  .page-title{font-size:26px;font-weight:600;color:var(--text-primary);letter-spacing:-.3px;line-height:1.1;}
+  .page-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-tertiary);letter-spacing:.06em;margin-top:3px;}
+
+  /* GRIDS */
+  .row-2-asym{display:grid;grid-template-columns:56% 1fr;gap:10px;}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  /* BRIEFING MODAL */
+  .briefing-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,10,.97);backdrop-filter:blur(24px);align-items:center;justify-content:center;padding:40px;}
+  .briefing-overlay.open{display:flex;}
+  .briefing-modal{background:var(--bg-card);border:1px solid var(--border);max-width:600px;width:100%;max-height:90vh;overflow-y:auto;border-radius:6px;}
+  .briefing-header{display:flex;justify-content:space-between;align-items:center;padding:24px 26px;border-bottom:1px solid var(--border);}
+  .briefing-title{font-size:24px;font-weight:600;color:var(--text-primary);}
+  .briefing-close{background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.1em;transition:color .15s;}
+  .briefing-close:hover{color:var(--text-primary);}
+  .briefing-ts{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-tertiary);padding:0 26px 16px;}
+  .briefing-section{border-top:1px solid var(--border);padding:18px 26px;}
+  .bs-label{font-size:9px;font-weight:700;letter-spacing:.2em;color:var(--text-tertiary);margin-bottom:12px;}
+  .bs-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;}
+  .bs-item:last-child{margin-bottom:0;}
+  .bs-priority{font-size:8px;font-weight:700;padding:2px 6px;flex-shrink:0;margin-top:2px;border-radius:2px;}
+  .p1-tag{background:var(--urgent-bg);color:var(--urgent);}
+  .p2-tag{background:var(--pending-bg);color:var(--pending);}
+  .p3-tag{background:var(--active-bg);color:var(--active);}
+  .bs-text{font-size:var(--label-size);color:var(--text-primary);line-height:1.6;}
+  .bs-text small{display:block;color:var(--text-secondary);font-size:var(--label-size);margin-top:2px;opacity:.8;}
+  .briefing-footer{padding:16px 26px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;}
+  .briefing-action{font-size:10px;font-weight:700;letter-spacing:.1em;padding:9px 18px;cursor:pointer;transition:all .15s;border-radius:4px;}
+  .briefing-action.primary{background:var(--text-primary);color:var(--bg);border:none;}
+  .briefing-action.secondary{background:none;border:1px solid var(--border-light);color:var(--text-secondary);}
+  .briefing-action:hover{opacity:.85;}
+
+  /* MOBILE */
+  @media(max-width:768px){
+    html,body{overflow:auto;}
+    body{flex-direction:column;}
+    .sidebar{display:none;}
+    .topbar{padding:0 14px;}
+    .page-content{padding:12px 12px calc(68px + var(--safe-bottom));}
+    .row-2-asym,.row-2,.three-col{grid-template-columns:1fr;}
+    .stat-strip{grid-template-columns:repeat(3,1fr);}
+    .density-toggle{display:none;}
+    .btn-morning span{display:none;}
+    .bottom-nav-mobile{display:flex !important;}
+  }
+  .bottom-nav-mobile{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.97);border-top:1px solid var(--border);padding-bottom:var(--safe-bottom);backdrop-filter:blur(20px);}
+  .bnm-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;cursor:pointer;background:none;border:none;text-decoration:none;}
+  .bnm-item.active .bnm-icon{opacity:1;}
+  .bnm-item.active .bnm-label{color:var(--text-primary);}
+  .bnm-icon{width:17px;height:17px;color:var(--text-primary);opacity:.25;}
+  .bnm-label{font-size:8px;font-weight:700;letter-spacing:.1em;color:var(--text-secondary);}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <span class="sidebar-logo">MERIDIAN</span>
+    <button class="btn-collapse" onclick="toggleSidebar()">
+      <svg class="collapse-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+  </div>
+  <nav class="nav-list">
+    <div class="nav-section-label">OVERVIEW</div>
+    <a class="nav-item active" href="index.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+      <span class="nav-label">DASHBOARD</span>
+    </a>
+    <div class="nav-section-label">DEALS</div>
+    <a class="nav-item" href="pipeline.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="nav-label">PIPELINE</span>
+    </a>
+    <a class="nav-item" href="offer-builder.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      <span class="nav-label">OFFER BUILDER</span>
+    </a>
+    <a class="nav-item" href="compliance-checklist.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      <span class="nav-label">COMPLIANCE</span>
+    </a>
+    <div class="nav-section-label">CLIENTS</div>
+    <a class="nav-item" href="lead-intake.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      <span class="nav-label">LEADS</span>
+    </a>
+    <a class="nav-item" href="client-comms.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+      <span class="nav-label">COMMS</span>
+    </a>
+    <div class="nav-section-label">INTELLIGENCE</div>
+    <a class="nav-item" href="smart-calendar.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 14h.01M12 14h.01M15 14h.01"/></svg>
+      <span class="nav-label">SMART CAL</span>
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a class="nav-item" href="agent-performance.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">PERFORMANCE</span>
+    </a>
+    <a class="nav-item" href="meridian-onboarding.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="nav-label">SETTINGS</span>
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="search-input" placeholder="Search clients, addresses, tools…" autocomplete="off" oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)">
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="density-toggle">
+        <button class="density-btn" id="d-compact"  onclick="setDensity('compact')">S</button>
+        <button class="density-btn active" id="d-normal" onclick="setDensity('normal')">M</button>
+        <button class="density-btn" id="d-comfort" onclick="setDensity('comfortable')">L</button>
+      </div>
+      <button class="btn-morning" onclick="openBriefing()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span>MORNING BRIEFING</span>
+      </button>
+      <button class="notif-btn" onclick="showNotifications()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span class="notif-badge has-alerts"></span>
+      </button>
+      <div class="agent-chip" onclick="window.location.href='meridian-onboarding.html'">
+        <div class="agent-avatar" id="topbar-avatar">JE</div>
+        <span class="agent-chip-name" id="topbar-name">AGENT</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- HEADER -->
+    <div class="page-header">
+      <h1 class="page-title" id="dash-greeting">Good morning.</h1>
+      <p class="page-sub" id="dash-date"></p>
+    </div>
+
+    <!-- ALERT -->
+    <div class="alert-strip">
+      <span class="alert-dot"></span>
+      <span class="alert-text"><strong>Counter on 320 S. Clinton expires at 5:00 PM today.</strong> Marcus Torres pre-approval still pending.</span>
+      <button class="alert-action" onclick="window.location.href='pipeline.html'">VIEW DEAL →</button>
+    </div>
+
+    <!-- SETTINGS BAR -->
+    <div class="widget-settings-bar">
+      <span class="ws-info">3 URGENT · 5 FOLLOW-UPS DUE</span>
+      <button class="btn-customize" onclick="alert('Use density controls (S/M/L) in the top bar to adjust information density.')">CUSTOMIZE LAYOUT ↕</button>
+    </div>
+
+    <!-- 5-STAT STRIP -->
+    <div class="stat-strip">
+      <div class="stat-cell">
+        <p class="stat-label">ACTIVE PIPELINE</p>
+        <p class="stat-num" id="stat-pipeline">—</p>
+        <p class="stat-sub" id="stat-pipeline-sub">Loading…</p>
+      </div>
+      <div class="stat-cell">
+        <p class="stat-label">EMAILS TRIAGED</p>
+        <p class="stat-num">34</p>
+        <p class="stat-sub stat-sub-alert">4 need action</p>
+      </div>
+      <div class="stat-cell">
+        <p class="stat-label">FOLLOW-UPS SENT</p>
+        <p class="stat-num">12</p>
+        <p class="stat-sub">Auto — overnight</p>
+      </div>
+      <div class="stat-cell" id="rate-cell">
+        <p class="stat-label">30-YR FIXED</p>
+        <p class="stat-num" id="rate-num">6.65%</p>
+        <p class="stat-sub" id="rate-sub">Freddie Mac PMMS</p>
+      </div>
+      <div class="stat-cell">
+        <p class="stat-label">MERIDIAN SCORE</p>
+        <p class="stat-num">82</p>
+        <p class="stat-sub stat-sub-up">↑ 4 pts this week</p>
+      </div>
+    </div>
+
+    <!-- ROW 1: INBOX + ACTIVE PIPELINE -->
+    <div class="row-2-asym">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">INBOX — URGENT FIRST</span>
+          <button class="panel-action" onclick="window.location.href='smart-calendar.html'">VIEW ALL →</button>
+        </div>
+        <div class="inbox-item" onclick="window.location.href='smart-calendar.html'">
+          <div class="inbox-pri pri-urgent"></div>
+          <div class="inbox-body">
+            <p class="inbox-from">Maria Santos — Client</p>
+            <p class="inbox-subj">Ready to make an offer on Elm St</p>
+            <p class="inbox-prev">We loved the showing yesterday. Can we talk strategy today?</p>
+          </div>
+          <div class="inbox-meta"><span class="inbox-time">9:12 AM</span><span class="inbox-tag tag-urgent">URGENT</span></div>
+        </div>
+        <div class="inbox-item" onclick="window.location.href='smart-calendar.html'">
+          <div class="inbox-pri pri-deadline"></div>
+          <div class="inbox-body">
+            <p class="inbox-from">First Midwest Lending</p>
+            <p class="inbox-subj">Re: Johnson file — docs needed by 5pm</p>
+            <p class="inbox-prev">We're missing the updated bank statements to proceed with underwriting…</p>
+          </div>
+          <div class="inbox-meta"><span class="inbox-time">8:44 AM</span><span class="inbox-tag tag-action">DEADLINE</span></div>
+        </div>
+        <div class="inbox-item" onclick="window.location.href='smart-calendar.html'">
+          <div class="inbox-pri pri-counter"></div>
+          <div class="inbox-body">
+            <p class="inbox-from">Agent Rivera — Listing Side</p>
+            <p class="inbox-subj">Counter on 1842 Oak — $318,500</p>
+            <p class="inbox-prev">Sellers came back at 318.5, as-is, 30-day close. Your move.</p>
+          </div>
+          <div class="inbox-meta"><span class="inbox-time">8:01 AM</span><span class="inbox-tag tag-counter">COUNTER</span></div>
+        </div>
+        <div class="inbox-item" onclick="window.location.href='smart-calendar.html'">
+          <div class="inbox-pri pri-action"></div>
+          <div class="inbox-body">
+            <p class="inbox-from">Chicago Association of Realtors</p>
+            <p class="inbox-subj">March CE credits — deadline approaching</p>
+            <p class="inbox-prev">You have 3 CE credits remaining before your license renewal date.</p>
+          </div>
+          <div class="inbox-meta"><span class="inbox-time">7:30 AM</span><span class="inbox-tag tag-action">ACTION</span></div>
+        </div>
+        <div class="inbox-item" onclick="window.location.href='smart-calendar.html'">
+          <div class="inbox-pri pri-normal"></div>
+          <div class="inbox-body">
+            <p class="inbox-from">Zillow Leads</p>
+            <p class="inbox-subj">New inquiry — Oak Park 3bd buyer</p>
+            <p class="inbox-prev">Someone is searching in your market. Auto-response sent.</p>
+          </div>
+          <div class="inbox-meta"><span class="inbox-time">6:55 AM</span><span class="inbox-tag tag-auto">AUTO-HANDLED</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">ACTIVE PIPELINE</span>
+          <button class="panel-action" onclick="window.location.href='pipeline.html'">FULL PIPELINE →</button>
+        </div>
+        <div class="pip-item" onclick="window.location.href='pipeline.html'">
+          <span class="pip-stage pip-closing">CLOSING</span>
+          <div class="pip-body"><p class="pip-name">Johnson Family</p><p class="pip-addr">4821 Maple, Berwyn</p></div>
+          <span class="pip-deadline urgent">Mar 8 · 7d</span>
+        </div>
+        <div class="pip-item" onclick="window.location.href='pipeline.html'">
+          <span class="pip-stage pip-contract">CONTRACT</span>
+          <div class="pip-body"><p class="pip-name">Maria Santos</p><p class="pip-addr">1842 Oak, Oak Park</p></div>
+          <span class="pip-deadline soon">Mar 15 · 14d</span>
+        </div>
+        <div class="pip-item" onclick="window.location.href='pipeline.html'">
+          <span class="pip-stage pip-contract">CONTRACT</span>
+          <div class="pip-body"><p class="pip-name">DeShawn Williams</p><p class="pip-addr">612 Central, Cicero</p></div>
+          <span class="pip-deadline">Mar 28 · 27d</span>
+        </div>
+        <div class="pip-item" onclick="window.location.href='pipeline.html'">
+          <span class="pip-stage pip-showing">SHOWING</span>
+          <div class="pip-body"><p class="pip-name">Reyes Couple</p><p class="pip-addr">Searching — Maywood</p></div>
+          <span class="pip-deadline">No deadline</span>
+        </div>
+        <div class="pip-item" onclick="window.location.href='pipeline.html'">
+          <span class="pip-stage pip-lead">NEW LEAD</span>
+          <div class="pip-body"><p class="pip-name">Zillow Inquiry</p><p class="pip-addr">Oak Park 3bd — Budget TBD</p></div>
+          <span class="pip-deadline soon">Call today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: MARKET PULSE + FOLLOW-UP + MERIDIAN LIVE -->
+    <div class="three-col">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">MARKET PULSE</span>
+          <button class="panel-action" onclick="window.location.href='smart-calendar.html'">SMART CAL →</button>
+        </div>
+        <div class="mp-row">
+          <p class="mp-label">30-Year Fixed</p>
+          <div class="mp-right"><p class="mp-val">6.82%</p><p class="mp-change mp-up">↓ 0.04%</p></div>
+        </div>
+        <div class="mp-row">
+          <p class="mp-label">15-Year Fixed</p>
+          <div class="mp-right"><p class="mp-val">6.14%</p><p class="mp-change mp-up">↓ 0.02%</p></div>
+        </div>
+        <div class="mp-row">
+          <p class="mp-label">Chicago Inventory</p>
+          <div class="mp-right"><p class="mp-val">2,847</p><p class="mp-change mp-dn">↑ 147 new</p></div>
+        </div>
+        <div class="mp-row">
+          <p class="mp-label">Avg DOM — Suburbs</p>
+          <div class="mp-right"><p class="mp-val">18</p><p class="mp-change mp-up">↓ 3 days</p></div>
+        </div>
+        <div class="mp-row">
+          <p class="mp-label">List-to-Sale Ratio</p>
+          <div class="mp-right"><p class="mp-val">98.4%</p><p class="mp-change mp-flat">Stable</p></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">FOLLOW-UP QUEUE</span>
+          <button class="panel-action" onclick="window.location.href='lead-intake.html'">ALL LEADS →</button>
+        </div>
+        <div id="fu-cards-list"></div>
+      </div>
+
+      <div class="terminal">
+        <div class="t-bar">
+          <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+          <span class="t-title">MERIDIAN — LIVE</span>
+        </div>
+        <div class="t-body">
+          <div><span class="t-prompt">› </span><span class="t-cmd">status</span></div>
+          <div class="t-ok">All systems nominal.</div>
+          <br>
+          <div class="t-alert">⚡ Priority actions today:</div>
+          <div class="t-note">1. Call Maria — offer strategy</div>
+          <div class="t-note">2. Send docs to lender by 5pm</div>
+          <div class="t-urgent">3. Counter expires — S. Clinton</div>
+          <br>
+          <div class="t-note">Rates dropped overnight.</div>
+          <div class="t-note">Re-engage paused buyers today.</div>
+          <br>
+          <div><span class="t-prompt">› </span><span class="cursor"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: UPCOMING DEADLINES + AI CONTENT DRAFTS -->
+    <div class="row-2">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">UPCOMING DEADLINES</span>
+          <button class="panel-action" onclick="window.location.href='smart-calendar.html'">SMART CAL →</button>
+        </div>
+        <div class="deadline-row"><div class="deadline-left"><span class="deadline-day">10</span><span class="deadline-mon">MAR</span></div><div class="deadline-body"><p class="deadline-text">Counter expires — 320 S. Clinton</p><p class="deadline-sub">5:00 PM · Response required today</p></div><span class="deadline-tag"><span class="badge badge-urgent">P1</span></span></div>
+        <div class="deadline-row"><div class="deadline-left"><span class="deadline-day">13</span><span class="deadline-mon">MAR</span></div><div class="deadline-body"><p class="deadline-text">Inspection contingency — 1140 Ridgeway</p><p class="deadline-sub">Repair addendum still pending</p></div><span class="deadline-tag"><span class="badge badge-pending">P2</span></span></div>
+        <div class="deadline-row"><div class="deadline-left"><span class="deadline-day">18</span><span class="deadline-mon">MAR</span></div><div class="deadline-body"><p class="deadline-text">Final walkthrough — 8812 Oak Ave</p><p class="deadline-sub">11:00 AM · Confirm with buyers</p></div><span class="deadline-tag"><span class="badge badge-pending">P2</span></span></div>
+        <div class="deadline-row"><div class="deadline-left"><span class="deadline-day">21</span><span class="deadline-mon">MAR</span></div><div class="deadline-body"><p class="deadline-text">Closing — 8812 Oak Ave, Berwyn</p><p class="deadline-sub">HOA docs still outstanding</p></div><span class="deadline-tag"><span class="badge badge-urgent">P1</span></span></div>
+      </div>
+
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /main -->
+
+<!-- MORNING BRIEFING MODAL -->
+<div class="briefing-overlay" id="briefing-overlay" onclick="closeBriefingOutside(event)">
+  <div class="briefing-modal">
+    <div class="briefing-header">
+      <h2 class="briefing-title" id="briefing-greeting">Good morning.</h2>
+      <button class="briefing-close" onclick="closeBriefing()">CLOSE ✕</button>
+    </div>
+    <p class="briefing-ts" id="briefing-ts"></p>
+    <div class="briefing-section">
+      <p class="bs-label">P1 — UNMOVABLE TODAY</p>
+      <div class="bs-item"><span class="bs-priority p1-tag">P1</span><div class="bs-text">Counter on 320 S. Clinton expires at 5:00 PM today<small>Marcus Torres needs updated pre-approval before you respond</small></div></div>
+      <div class="bs-item"><span class="bs-priority p1-tag">P1</span><div class="bs-text">HOA docs still missing for 8812 Oak Ave<small>Closing in 11 days — call HOA board directly today</small></div></div>
+    </div>
+    <div class="briefing-section">
+      <p class="bs-label">P2 — DEADLINES THIS WEEK</p>
+      <div class="bs-item"><span class="bs-priority p2-tag">P2</span><div class="bs-text">Inspection contingency — 1140 Ridgeway<small>Mar 13 at 5:00 PM · Repair addendum still pending</small></div></div>
+      <div class="bs-item"><span class="bs-priority p2-tag">P2</span><div class="bs-text">Final walkthrough — 8812 Oak Ave<small>Scheduled Mar 18 at 11:00 AM</small></div></div>
+    </div>
+    <div class="briefing-section">
+      <p class="bs-label">P3 — FOLLOW-UPS QUEUED</p>
+      <div class="bs-item"><span class="bs-priority p3-tag">P3</span><div class="bs-text">Lisa Chen — no response in 7 days<small>Re-engagement email ready in Content Drafts</small></div></div>
+      <div class="bs-item"><span class="bs-priority p3-tag">P3</span><div class="bs-text">Priya Nair — pre-consult info due before tomorrow<small>Send buyer intake + Oak Park market report</small></div></div>
+    </div>
+    <div class="briefing-footer">
+      <button class="briefing-action primary" onclick="window.location.href='pipeline.html'">VIEW PIPELINE →</button>
+      <button class="briefing-action secondary" onclick="window.location.href='client-comms.html'">DRAFT FOLLOW-UPS</button>
+      <button class="briefing-action secondary" onclick="closeBriefing()">DISMISS</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav-mobile">
+  <a class="bnm-item active" href="index.html"><svg class="bnm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg><span class="bnm-label">HOME</span></a>
+  <a class="bnm-item" href="pipeline.html"><svg class="bnm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="bnm-label">DEALS</span></a>
+  <a class="bnm-item" href="lead-intake.html"><svg class="bnm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg><span class="bnm-label">LEADS</span></a>
+  <a class="bnm-item" href="smart-calendar.html"><svg class="bnm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="bnm-label">CALENDAR</span></a>
+  <a class="bnm-item" href="meridian-onboarding.html"><svg class="bnm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span class="bnm-label">PROFILE</span></a>
+</nav>
+
+<script>
+// FOLLOW-UP DATA
+const FOLLOWUPS = [
+  { id:'fu1', name:'Marcus Torres',      ctx:'Updated pre-approval — counter at 5pm', tag:'urgent', phone:'3125550100', email:'marcus.torres@email.com', msg:'Hi Marcus, quick check-in — we need your updated pre-approval before the counter offer on 320 S. Clinton expires today. Where do things stand?' },
+  { id:'fu2', name:'Lisa Chen',          ctx:'No response in 7 days — re-engage now',  tag:'today',  phone:'7735550121', email:'lisa.chen@email.com',    msg:"Hi Lisa! Just wanted to check in — I have a couple of new listings in Oak Park that match your criteria. Worth a quick look?" },
+  { id:'fu3', name:'Priya Nair',         ctx:"Pre-consult materials due tomorrow",     tag:'today',  phone:'7735550188', email:'priya.nair@email.com',   msg:"Hi Priya! Sending over your pre-consultation packet. Let me know if you have questions before we meet tomorrow." },
+  { id:'fu4', name:'Raj & Sunita Patel', ctx:'3 weeks since last showing',             tag:'week',   phone:'3125550099', email:'raj.patel@email.com',    msg:"Hi Raj! It's been a few weeks — wanted to check in on your search. Any priorities shift, or should we schedule more showings?" },
+];
+
+function renderFollowUps() {
+  const TAG = { urgent:'badge-urgent', today:'badge-pending', week:'badge-info' };
+  const LBL = { urgent:'URGENT', today:'TODAY', week:'THIS WEEK' };
+  document.getElementById('fu-cards-list').innerHTML = FOLLOWUPS.map(fu => `
+    <div class="fq-item">
+      <div class="fq-avatar">${fu.name[0]}</div>
+      <div class="fq-body">
+        <div class="fq-top">
+          <p class="fq-name">${fu.name}</p>
+          <span class="badge ${TAG[fu.tag]}">${LBL[fu.tag]}</span>
+        </div>
+        <p class="fq-ctx">${fu.ctx}</p>
+        <div class="fq-actions">
+          <a class="fq-btn fq-call"  href="tel:+1${fu.phone}">CALL</a>
+          <a class="fq-btn fq-text"  href="sms:+1${fu.phone}?body=${encodeURIComponent(fu.msg)}">TEXT</a>
+          <a class="fq-btn fq-email" href="mailto:${fu.email}?subject=Following Up&body=${encodeURIComponent(fu.msg)}">EMAIL</a>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// SIDEBAR
+const sidebar = document.getElementById('sidebar');
+let sidebarCollapsed = false;
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  sidebar.classList.toggle('collapsed', sidebarCollapsed);
+  try { localStorage.setItem('meridian_sidebar_collapsed', sidebarCollapsed); } catch {}
+}
+try { if (localStorage.getItem('meridian_sidebar_collapsed') === 'true') { sidebarCollapsed = true; sidebar.classList.add('collapsed'); } } catch {}
+
+// SEARCH
+const SEARCH_INDEX = [
+  {type:'TRANSACTION',label:'8812 Oak Ave, Berwyn',url:'pipeline.html'},
+  {type:'TRANSACTION',label:'1140 Ridgeway, Oak Park',url:'pipeline.html'},
+  {type:'TRANSACTION',label:'320 S. Clinton, Chicago',url:'pipeline.html'},
+  {type:'TRANSACTION',label:'4450 W. Cermak, Cicero',url:'pipeline.html'},
+  {type:'CLIENT',label:'Marcus Torres',url:'lead-intake.html'},
+  {type:'CLIENT',label:'Lisa Chen',url:'lead-intake.html'},
+  {type:'CLIENT',label:'Priya Nair',url:'lead-intake.html'},
+  {type:'TOOL',label:'Compliance Checklist',url:'compliance-checklist.html'},
+  {type:'TOOL',label:'Offer Builder',url:'offer-builder.html'},
+  {type:'TOOL',label:'Market Pulse',url:'market-pulse.html'},
+  {type:'TOOL',label:'Smart Calendar & Inbox',url:'smart-calendar.html'},
+  {type:'TOOL',label:'Performance Dashboard',url:'agent-performance.html'},
+];
+function handleSearch(q) {
+  const r = document.getElementById('search-results');
+  if (!q.trim()) { r.classList.remove('open'); return; }
+  const hits = SEARCH_INDEX.filter(i => i.label.toLowerCase().includes(q.toLowerCase())).slice(0,6);
+  if (!hits.length) { r.classList.remove('open'); return; }
+  r.innerHTML = hits.map(h => `<div class="sr-item" onclick="window.location.href='${h.url}'"><span class="sr-type">${h.type}</span>${h.label}</div>`).join('');
+  r.classList.add('open');
+}
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) document.getElementById('search-results').classList.remove('open'); });
+
+// NOTIFICATIONS
+function showNotifications() {
+  alert('3 alerts:\n· HOA docs missing for 8812 Oak Ave (closing in 11 days)\n· Counter on 320 S. Clinton expires TODAY at 5pm\n· 2 follow-ups are overdue');
+}
+
+// DENSITY
+function setDensity(mode) {
+  document.body.classList.remove('density-compact','density-comfortable');
+  if (mode === 'compact')     document.body.classList.add('density-compact');
+  if (mode === 'comfortable') document.body.classList.add('density-comfortable');
+  document.querySelectorAll('.density-btn').forEach(b => b.classList.remove('active'));
+  const map = { compact:'d-compact', normal:'d-normal', comfortable:'d-comfort' };
+  document.getElementById(map[mode])?.classList.add('active');
+  try { const p = JSON.parse(localStorage.getItem('meridian_agent_profile') || '{}'); p.density = mode; localStorage.setItem('meridian_agent_profile', JSON.stringify(p)); } catch {}
+}
+try { const p = JSON.parse(localStorage.getItem('meridian_agent_profile') || '{}'); if (p.density) setDensity(p.density); } catch {}
+
+// MORNING BRIEFING
+let agentFirstName = '';
+function openBriefing() {
+  const now = new Date(), h = now.getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('briefing-greeting').textContent = agentFirstName ? `${greet}, ${agentFirstName}.` : `${greet}.`;
+  document.getElementById('briefing-ts').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) + ' · ' + now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) + ' · 2 P1 · 2 P2 · 2 P3';
+  document.getElementById('briefing-overlay').classList.add('open');
+}
+function closeBriefing() { document.getElementById('briefing-overlay').classList.remove('open'); }
+function closeBriefingOutside(e) { if (e.target === document.getElementById('briefing-overlay')) closeBriefing(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBriefing(); });
+
+// PROFILE LOAD
+(function() {
+  try {
+    const p = JSON.parse(localStorage.getItem('meridian_agent_profile'));
+    if (p?.agent?.name) {
+      const parts = p.agent.name.split(' ');
+      agentFirstName = parts[0];
+      document.getElementById('topbar-avatar').textContent = parts.map(n => n[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('topbar-name').textContent = agentFirstName.toUpperCase();
+    }
+  } catch {}
+})();
+
+// GREETING + DATE
+(function() {
+  const now = new Date(), h = now.getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const p = (() => { try { return JSON.parse(localStorage.getItem('meridian_agent_profile')); } catch { return null; } })();
+  const fn = p?.agent?.name?.split(' ')[0] || '';
+  document.getElementById('dash-greeting').textContent = fn ? `${greet}, ${fn}.` : `${greet}.`;
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+})();
+
+// COPY CONTENT
+function copyContent(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent; btn.textContent = 'COPIED ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => { btn.textContent = 'COPIED ✓'; setTimeout(() => btn.textContent = 'COPY', 2000); });
+}
+
+// INIT
+renderFollowUps();
+
+// ── Live Mortgage Rate on Dashboard ─────────────────────────────────────────
+(async function loadDashboardRate() {
+  try {
+    const resp = await fetch('/api/rates');
+    if (!resp.ok) return;
+    const r = await resp.json();
+    const d = r.rate30yr;
+    if (!d?.current) return;
+
+    document.getElementById('rate-num').textContent = d.current.toFixed(2) + '%';
+
+    if (d.previous != null) {
+      const delta  = +(d.current - d.previous).toFixed(2);
+      const el     = document.getElementById('rate-sub');
+      if (delta > 0) {
+        el.textContent = `↑ ${Math.abs(delta).toFixed(2)}% this week`;
+        el.className   = 'stat-sub stat-sub-alert';
+      } else if (delta < 0) {
+        el.textContent = `↓ ${Math.abs(delta).toFixed(2)}% this week`;
+        el.className   = 'stat-sub stat-sub-up';
+      } else {
+        el.textContent = '— unchanged this week';
+        el.className   = 'stat-sub';
+      }
+    }
+  } catch (_) { /* keep placeholder */ }
+})();
+
+// ── REAL PIPELINE STATS FROM LOCALSTORAGE ──────────────────────
+(function loadPipelineStats() {
+  try {
+    const raw = localStorage.getItem('meridian_transactions');
+    const deals = raw ? JSON.parse(raw) : null;
+    const numEl  = document.getElementById('stat-pipeline');
+    const subEl  = document.getElementById('stat-pipeline-sub');
+
+    if (!deals || !Array.isArray(deals) || deals.length === 0) {
+      // No real data — show demo fallback
+      numEl.textContent = '5';
+      subEl.textContent = 'Demo data';
+      subEl.className   = 'stat-sub';
+      return;
+    }
+
+    const active = deals.filter(d => ['offer','pending','closing','listed'].includes(d.stage));
+    const closing = deals.filter(d => d.stage === 'closing').length;
+    const volume  = deals.reduce((s, d) => s + (parseFloat(d.price) || 0), 0);
+    const volStr  = volume >= 1000000
+      ? '$' + (volume / 1000000).toFixed(1) + 'M'
+      : volume >= 1000 ? '$' + Math.round(volume / 1000) + 'K' : '$' + volume;
+
+    numEl.textContent = active.length;
+    subEl.textContent = `${volStr} volume · ${closing} closing`;
+    subEl.className   = 'stat-sub stat-sub-up';
+  } catch (_) {
+    document.getElementById('stat-pipeline').textContent = '—';
+    document.getElementById('stat-pipeline-sub').textContent = '';
+  }
+})();
+</script>
+</body>
+</html>

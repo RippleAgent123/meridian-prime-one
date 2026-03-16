@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Market Pulse</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root { --black:#060606;--off-black:#0e0e0e;--surface:#131313;--border:#1c1c1c;--border-light:#242424;--white:#f8f8f6;--off-white:#e8e8e4;--muted:#4a4a4a;--dim:#2a2a2a; }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { background:var(--black);color:var(--off-white);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh; }
+  body::after { content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999; }
+  nav { position:fixed;top:0;left:0;right:0;z-index:100;padding:24px 64px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.94);backdrop-filter:blur(20px); }
+  .nav-logo { font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.3em;color:var(--white); }
+  .nav-tag  { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted); }
+  .page-wrapper { padding:120px 64px 80px;max-width:860px;margin:0 auto; }
+  .page-header { margin-bottom:48px; }
+  .page-eyebrow { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--muted);margin-bottom:16px; }
+  .page-title { font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:var(--white); }
+
+  .input-row { display:flex;gap:12px;margin-bottom:48px;align-items:flex-end; }
+  .input-row .field { flex:1;display:flex;flex-direction:column;gap:8px; }
+  label { font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase; }
+  input[type=text] { background:var(--surface);border:1px solid var(--border-light);color:var(--off-white);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;padding:13px 16px;outline:none;transition:border-color 0.2s;width:100%; }
+  input:focus { border-color:var(--off-white); }
+  input::placeholder { color:var(--muted);opacity:0.5; }
+  .btn-gen { background:var(--off-white);color:var(--black);border:none;padding:14px 28px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;white-space:nowrap; }
+  .btn-gen:hover { opacity:0.85; }
+  .btn-gen:disabled { opacity:0.45; cursor:not-allowed; }
+  .data-badge { display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.15em;padding:3px 8px;margin-left:10px;vertical-align:middle; }
+  .data-badge.live { background:rgba(96,160,96,.15);color:#80c080;border:1px solid rgba(96,160,96,.3); }
+  .data-badge.cached { background:rgba(96,144,192,.1);color:#7aaad0;border:1px solid rgba(96,144,192,.25); }
+  .data-badge.demo { background:rgba(74,74,74,.3);color:var(--muted);border:1px solid var(--border); }
+
+  .report { display:none; }
+  .report.visible { display:block; }
+
+  .report-header { border:1px solid var(--border);padding:28px;margin-bottom:1px; background:var(--off-black); }
+  .report-zip { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--muted);margin-bottom:8px; }
+  .report-title { font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--white);margin-bottom:6px; }
+  .report-date { font-family:'Space Mono',monospace;font-size:10px;color:var(--muted); }
+
+  .metrics-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-top:none;margin-bottom:1px; }
+  .metric-block { background:var(--off-black);padding:24px; }
+  .metric-label { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--muted);margin-bottom:10px; }
+  .metric-value { font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--white);line-height:1;margin-bottom:4px; }
+  .metric-trend { font-size:11px;color:var(--muted); }
+  .metric-trend.up { color:#80a080; }
+  .metric-trend.down { color:#a08080; }
+
+  /* RATES STRIP */
+  .rates-strip { display:flex;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:48px; }
+  .rate-cell { flex:1;background:var(--off-black);padding:18px 20px;min-width:0; }
+  .rate-cell-label { font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.18em;color:var(--muted);margin-bottom:8px;white-space:nowrap;overflow:hidden; }
+  .rate-cell-value { font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--white);line-height:1;margin-bottom:3px; }
+  .rate-cell-delta { font-size:10px; }
+  .rate-cell-delta.up   { color:#a08080; } /* rate went up = bad for buyers */
+  .rate-cell-delta.down { color:#80a080; } /* rate went down = good */
+  .rate-cell-delta.flat { color:var(--muted); }
+  .rates-source { font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);margin-top:8px;letter-spacing:0.1em; }
+
+  /* NEWS FEED */
+  .news-section { margin-top:48px; }
+  .news-label { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);margin-bottom:20px; }
+  .news-grid { display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border); }
+  .news-item { background:var(--off-black);padding:18px 22px;display:flex;gap:20px;align-items:flex-start; }
+  .news-meta { display:flex;flex-direction:column;gap:4px;min-width:90px;flex-shrink:0; }
+  .news-source { font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.1em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .news-ago    { font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);white-space:nowrap; }
+  .news-title  { font-size:13px;font-weight:300;color:var(--off-white);line-height:1.5;text-decoration:none; }
+  .news-title:hover { color:var(--white); }
+  .news-loading { font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);padding:20px 0; }
+
+  /* RECOMMENDATION */
+  .rec-block { border:1px solid var(--border);border-top:none;padding:28px;background:var(--off-black); }
+  .rec-label { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);margin-bottom:12px; }
+  .rec-verdict { font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:var(--white);margin-bottom:16px; }
+  .rec-body { font-size:13px;color:var(--muted);line-height:1.8;max-width:640px; }
+
+  /* PRICE TRENDS */
+  .trend-section { border:1px solid var(--border);border-top:none;padding:28px;background:var(--off-black); }
+  .trend-label { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);margin-bottom:20px; }
+  .trend-bars { display:flex;align-items:flex-end;gap:8px;height:60px; }
+  .trend-col { display:flex;flex-direction:column;align-items:center;gap:6px;flex:1; }
+  .trend-bar { width:100%;background:var(--dim);transition:background 0.2s;min-height:2px; }
+  .trend-bar:hover { background:var(--muted); }
+  .trend-bar.current { background:rgba(248,248,246,0.35); }
+  .trend-mo { font-family:'Space Mono',monospace;font-size:8px;color:var(--muted); }
+  .trend-price { font-family:'Space Mono',monospace;font-size:8px;color:var(--muted); }
+
+  @media (max-width:640px) { nav{padding:20px 24px;} .page-wrapper{padding:100px 24px 60px;} .metrics-grid{grid-template-columns:1fr 1fr;} .input-row{flex-direction:column;} }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-tag">MARKET PULSE</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <p class="page-eyebrow">Market Intelligence</p>
+    <h1 class="page-title">Market Pulse Report</h1>
+  </div>
+
+  <!-- LIVE RATES STRIP -->
+  <div id="rates-strip" class="rates-strip" style="display:none">
+    <!-- populated by loadRates() -->
+  </div>
+
+  <div class="input-row">
+    <div class="field">
+      <label>Zip Code or Neighborhood</label>
+      <input type="text" id="zip-input" placeholder="60301, Oak Park, Berwyn...">
+    </div>
+    <button class="btn-gen" onclick="generateReport()">Generate Report</button>
+  </div>
+
+  <div class="report" id="report">
+    <div class="report-header">
+      <p class="report-zip" id="r-zip"></p>
+      <p class="report-title" id="r-title"></p>
+      <p class="report-date" id="r-date"></p>
+    </div>
+
+    <div class="metrics-grid" id="metrics-grid"></div>
+
+    <div class="trend-section">
+      <p class="trend-label">MEDIAN SALE PRICE — LAST 6 MONTHS</p>
+      <div class="trend-bars" id="trend-bars"></div>
+    </div>
+
+    <div class="rec-block">
+      <p class="rec-label">MERIDIAN RECOMMENDATION</p>
+      <p class="rec-verdict" id="r-verdict"></p>
+      <p class="rec-body" id="r-body"></p>
+    </div>
+  </div>
+
+  <!-- NEWS FEED — loaded once, stays visible -->
+  <div class="news-section" id="news-section" style="display:none">
+    <p class="news-label">MARKET HEADLINES</p>
+    <div class="news-grid" id="news-grid">
+      <div class="news-loading">Loading headlines...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Fallback data (used when API isn't configured or request fails) ──────────
+const MARKET_DATA = {
+  '60402': {
+    areaName: 'Berwyn, IL',
+    dom: 14, domTrend: -4, listToSale: 100.2,
+    activeListings: 35, newListings: 12, closedSales: 22,
+    medianPrice: 310000, priceTrend: 4.2,
+    monthlyPrices: [287000, 291000, 295000, 299000, 305000, 310000],
+    verdict: "Competitive Seller's Market",
+    verdictBody: `Berwyn remains one of the most competitive markets in the western suburbs. At just {dom} average days on market and a list-to-sale ratio of {lts}%, buyers are routinely offering at or above asking price. Year-over-year appreciation of 4.2% reflects sustained demand. Sellers should price at market confidently. Buyers must be ready to act within 24–48 hours of a new listing.`,
+  },
+  '60804': {
+    areaName: 'Cicero, IL',
+    dom: 19, domTrend: -2, listToSale: 98.1,
+    activeListings: 28, newListings: 9, closedSales: 17,
+    medianPrice: 245000, priceTrend: 3.1,
+    monthlyPrices: [228000, 231000, 235000, 238000, 241000, 245000],
+    verdict: "Seller's Market",
+    verdictBody: `Cicero offers attainable entry-level pricing with steady demand from first-time buyers. At {dom} average days on market and a list-to-sale ratio of {lts}%, sellers hold the edge with moderate room for negotiation. Price appreciation of 3.1% year-over-year reflects durable demand.`,
+  },
+  default: {
+    areaName: null,
+    dom: 18, domTrend: -3, listToSale: 97.4,
+    activeListings: 42, newListings: 14, closedSales: 28,
+    medianPrice: 489000, priceTrend: 2.1,
+    monthlyPrices: [458000, 462000, 471000, 480000, 484000, 489000],
+    verdict: "Seller's Market",
+    verdictBody: `Inventory is tight with only {dom} average days on market. The list-to-sale ratio of {lts}% indicates buyers are frequently offering at or above list. Sellers have leverage — pricing at or slightly above market is defensible. Buyers should be prepared to move within 48 hours of a listing going live.`,
+  },
+};
+const AREA_LOOKUP = { 'berwyn': '60402', 'cicero': '60804' };
+
+// ── Dynamic month labels (last 6 months ending today) ────────────────────────
+function monthLabels() {
+  const ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return ABBR[d.getMonth()];
+  });
+}
+
+// ── Render report from a data object ────────────────────────────────────────
+function renderReport(d, raw, source) {
+  const displayName = d.areaName || raw;
+  const months      = d.monthLabels || monthLabels();
+
+  document.getElementById('r-zip').innerHTML =
+    raw.toUpperCase() +
+    `<span class="data-badge ${source}">${source === 'live' ? '● LIVE' : source === 'cached' ? '◎ CACHED' : 'DEMO DATA'}</span>`;
+
+  document.getElementById('r-title').textContent =
+    `${displayName} Market · ${new Date().toLocaleString('en-US', { month:'long', year:'numeric' })}`;
+  document.getElementById('r-date').textContent =
+    `Generated ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}` +
+    (d._fetchedAt ? ` · Data from ${new Date(d._fetchedAt).toLocaleDateString('en-US', { month:'short', day:'numeric' })}` : '');
+
+  const metrics = [
+    { label:'Median Sale Price',  value:'$'+(d.medianPrice/1000).toFixed(0)+'k',
+      trend: d.priceTrend >= 0 ? `↑ ${d.priceTrend}% YoY` : `↓ ${Math.abs(d.priceTrend)}% YoY`,
+      dir: d.priceTrend >= 0 ? 'up' : 'down' },
+    { label:'Avg Days on Market', value: d.dom,
+      trend: d.domTrend < 0 ? `↓ ${Math.abs(d.domTrend)} days MoM` : `↑ ${d.domTrend} days MoM`,
+      dir: d.domTrend < 0 ? 'up' : 'down' },
+    { label:'List-to-Sale Ratio', value: d.listToSale+'%',
+      trend: d.listToSale >= 100 ? 'Offers over list common' : 'Slight buyer leverage',
+      dir: d.listToSale >= 100 ? 'up' : '' },
+    { label:'Active Listings',    value: d.activeListings, trend: `${d.newListings} new this month`, dir:'' },
+    { label:'Closed Sales (30d)', value: d.closedSales,    trend: 'trailing 30 days', dir:'' },
+    { label:'Months of Supply',   value: (d.activeListings/d.closedSales).toFixed(1),
+      trend: d.activeListings/d.closedSales < 3 ? 'Seller\'s market' : 'Balanced market',
+      dir: d.activeListings/d.closedSales < 3 ? 'up' : '' },
+  ];
+
+  document.getElementById('metrics-grid').innerHTML = metrics.map(m => `
+    <div class="metric-block">
+      <p class="metric-label">${m.label}</p>
+      <p class="metric-value">${m.value}</p>
+      <p class="metric-trend ${m.dir}">${m.trend}</p>
+    </div>`).join('');
+
+  const maxP = Math.max(...d.monthlyPrices);
+  document.getElementById('trend-bars').innerHTML = d.monthlyPrices.map((p, i) => `
+    <div class="trend-col">
+      <div class="trend-bar${i === d.monthlyPrices.length-1 ? ' current' : ''}"
+           style="height:${Math.round((p/maxP)*100)}%"
+           title="$${(p/1000).toFixed(0)}k"></div>
+      <span class="trend-mo">${months[i] || ''}</span>
+    </div>`).join('');
+
+  const body = (d.verdictBody || '')
+    .replace('{dom}', d.dom)
+    .replace('{lts}', d.listToSale);
+
+  document.getElementById('r-verdict').textContent = d.verdict;
+  document.getElementById('r-body').textContent    = body;
+  document.getElementById('report').classList.add('visible');
+  document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Main: try live API first, fall back to hardcoded data ────────────────────
+async function generateReport() {
+  const raw = document.getElementById('zip-input').value.trim();
+  if (!raw) return;
+
+  const btn = document.querySelector('.btn-gen');
+  btn.disabled    = true;
+  btn.textContent = 'LOADING...';
+
+  const zipKey  = raw.replace(/\D/g, '').slice(0, 5);
+  const nameKey = raw.toLowerCase().replace(/,.*$/, '').trim();
+  const resolvedZip = zipKey || (AREA_LOOKUP[nameKey] ? AREA_LOOKUP[nameKey] : '');
+
+  // ── Try live API (only works when deployed on Vercel with API key set) ──
+  let usedLive = false;
+  if (resolvedZip && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    try {
+      const resp = await fetch(`/api/market?zip=${resolvedZip}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.medianPrice) {
+          const cacheHeader = resp.headers.get('X-Cache') || '';
+          const source = cacheHeader === 'MEM' ? 'cached' : 'live';
+          btn.disabled    = false;
+          btn.textContent = 'GENERATE REPORT';
+          renderReport(data, raw, source);
+          usedLive = true;
+        }
+      }
+    } catch (_) { /* fall through to local data */ }
+  }
+
+  // ── Fall back to hardcoded data ──────────────────────────────────────────
+  if (!usedLive) {
+    const d = MARKET_DATA[zipKey] || MARKET_DATA[AREA_LOOKUP[nameKey]] || MARKET_DATA.default;
+    btn.disabled    = false;
+    btn.textContent = 'GENERATE REPORT';
+    renderReport(d, raw, 'demo');
+  }
+}
+
+document.getElementById('zip-input').addEventListener('keydown', e => { if (e.key === 'Enter') generateReport(); });
+
+// ── Live Rates Strip ─────────────────────────────────────────────────────────
+async function loadRates() {
+  const strip = document.getElementById('rates-strip');
+  try {
+    // Works on Vercel; on localhost it hits the fallback values in the API
+    const resp = await fetch('/api/rates');
+    if (!resp.ok) throw new Error('no rates');
+    const r = await resp.json();
+
+    const cells = [
+      { key: 'rate30yr', r },
+      { key: 'rate15yr', r },
+      { key: 'rate5arm', r },
+      { key: 'fedFunds', r },
+      { key: 'treasury10y', r },
+    ].filter(({ key }) => r[key]?.current != null);
+
+    if (!cells.length) return;
+
+    strip.innerHTML = cells.map(({ key }) => {
+      const d     = r[key];
+      const delta = d.current != null && d.previous != null ? +(d.current - d.previous).toFixed(2) : null;
+      const dir   = delta === null ? 'flat' : delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+      const arrow = delta === null ? '' : delta > 0 ? '↑' : delta < 0 ? '↓' : '—';
+      const deltaStr = delta !== null && delta !== 0
+        ? `${arrow} ${Math.abs(delta).toFixed(2)}% WoW`
+        : (delta === 0 ? '— unchanged' : '');
+      return `<div class="rate-cell">
+        <p class="rate-cell-label">${d.label || key}</p>
+        <p class="rate-cell-value">${d.current?.toFixed(2)}%</p>
+        <p class="rate-cell-delta ${dir}">${deltaStr || '&nbsp;'}</p>
+      </div>`;
+    }).join('') +
+    `<div style="grid-column:1/-1;padding:6px 16px;background:var(--off-black)">
+       <p class="rates-source">Source: ${r._source || 'FRED / Freddie Mac PMMS'} · Updated ${r.rate30yr?.date || 'weekly'}</p>
+     </div>`;
+
+    strip.style.display = 'flex';
+    strip.style.flexWrap = 'wrap';
+  } catch (_) {
+    // Rates unavailable — just hide the strip
+    strip.style.display = 'none';
+  }
+}
+
+// ── News Feed ────────────────────────────────────────────────────────────────
+async function loadNews(query) {
+  const section = document.getElementById('news-section');
+  const grid    = document.getElementById('news-grid');
+  section.style.display = 'block';
+  grid.innerHTML = '<div class="news-loading">Loading headlines...</div>';
+
+  try {
+    const url   = query
+      ? `/api/news?q=${encodeURIComponent(query + ' real estate')}`
+      : '/api/news?topic=chicago';
+    const resp  = await fetch(url);
+    if (!resp.ok) throw new Error('news unavailable');
+    const data  = await resp.json();
+
+    if (!data.items?.length) throw new Error('no articles');
+
+    grid.innerHTML = data.items.map(item => `
+      <div class="news-item">
+        <div class="news-meta">
+          <span class="news-source">${item.source || '—'}</span>
+          <span class="news-ago">${item.ago || ''}</span>
+        </div>
+        <a class="news-title" href="${item.link}" target="_blank" rel="noopener">${item.title}</a>
+      </div>`).join('');
+  } catch (_) {
+    grid.innerHTML = '<div class="news-loading" style="color:var(--dim)">Headlines unavailable</div>';
+  }
+}
+
+// ── Init on page load ────────────────────────────────────────────────────────
+loadRates();
+loadNews(); // load Chicago real estate news by default
+</script>
+</body>
+</html>

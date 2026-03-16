@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Agent Performance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #060606; --off-black: #0e0e0e; --surface: #131313;
+    --border: #1c1c1c; --border-light: #242424;
+    --white: #f8f8f6; --off-white: #e8e8e4; --muted: #4a4a4a; --dim: #2a2a2a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--black); color: var(--off-white); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; }
+  body::after { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 9999; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 24px 64px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(6,6,6,0.94); backdrop-filter: blur(20px); }
+  .nav-logo { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.3em; color: var(--white); }
+  .nav-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); }
+
+  .page-wrapper { padding: 120px 64px 80px; max-width: 1100px; margin: 0 auto; }
+
+  .page-header { margin-bottom: 48px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; color: var(--white); }
+  .page-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* MERIDIAN SCORE */
+  .score-block {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  }
+  .score-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--muted); }
+  .score-value { font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 300; color: var(--white); line-height: 1; }
+  .score-max { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+  .score-bar-wrap { width: 160px; }
+  .score-bar-track { height: 2px; background: var(--dim); }
+  .score-bar-fill { height: 100%; background: var(--off-white); }
+
+  /* STAT GRID */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 48px; }
+  .stat-card { background: var(--off-black); padding: 28px; }
+  .stat-card-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 12px; }
+  .stat-card-value { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 300; color: var(--white); line-height: 1; margin-bottom: 4px; }
+  .stat-card-sub { font-size: 11px; color: var(--muted); }
+
+  /* FOLLOW-UPS */
+  .section-title { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 16px; }
+  .follow-up-list { border: 1px solid var(--border); }
+  .fu-row { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .fu-row:last-child { border-bottom: none; }
+  .fu-name { font-size: 13px; color: var(--off-white); }
+  .fu-context { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .fu-type { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--border-light); padding: 3px 8px; }
+  .fu-urgency { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+  .fu-urgency.hot { color: #c06060; }
+  .fu-urgency.warm { color: #c09060; }
+
+  /* SCORE BREAKDOWN */
+  .score-breakdown { margin-top: 48px; border: 1px solid var(--border); }
+  .breakdown-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .breakdown-title { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); }
+  .breakdown-score { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--off-white); }
+  .breakdown-row { display: grid; grid-template-columns: 1fr auto 120px; gap: 16px; align-items: center; padding: 14px 24px; border-bottom: 1px solid var(--border); }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-item-name { font-size: 13px; color: var(--off-white); }
+  .breakdown-pts { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .breakdown-bar-track { height: 2px; background: var(--dim); }
+  .breakdown-bar-fill { height: 100%; background: rgba(248,248,246,0.4); }
+
+  @media (max-width: 800px) {
+    nav { padding: 20px 24px; }
+    .page-wrapper { padding: 100px 24px 60px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .score-block { align-items: flex-start; }
+  }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-tag">PERFORMANCE</span>
+</nav>
+
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Performance</h1>
+      <p class="page-sub" id="perf-date"></p>
+    </div>
+    <div class="score-block">
+      <span class="score-label">MERIDIAN SCORE</span>
+      <span class="score-value" id="score-display">—</span>
+      <span class="score-max">/ 100</span>
+      <div class="score-bar-wrap">
+        <div class="score-bar-track"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-grid" id="stat-grid"></div>
+
+  <!-- FOLLOW-UPS DUE TODAY -->
+  <p class="section-title" style="margin-bottom:16px">FOLLOW-UPS DUE TODAY</p>
+  <div class="follow-up-list" id="follow-up-list"></div>
+
+  <!-- SCORE BREAKDOWN -->
+  <div class="score-breakdown" id="score-breakdown">
+    <div class="breakdown-header">
+      <span class="breakdown-title">MERIDIAN SCORE BREAKDOWN</span>
+      <span class="breakdown-score" id="breakdown-total"></span>
+    </div>
+    <div id="breakdown-rows"></div>
+  </div>
+
+</div>
+
+<script>
+const AGENT_NAME = (() => {
+  try { return JSON.parse(localStorage.getItem('meridian_agent_profile'))?.agent?.name || 'Agent'; } catch { return 'Agent'; }
+})();
+
+// ── Sample data ───────────────────────────────────────────────────────────────
+const STATS = [
+  { label: 'Active Listings',    value: 4,   sub: '2 with accepted offers' },
+  { label: 'Leads in Pipeline',  value: 11,  sub: '3 ready to transact' },
+  { label: 'Follow-ups Due',     value: 5,   sub: 'today' },
+  { label: 'Closings This Month',value: 2,   sub: '$1.16M in volume' },
+];
+
+const FOLLOW_UPS = [
+  { name: 'Marcus T.',   context: 'Pre-approval updated — ready to make offer on Oak Park properties', type: 'CALL',  urgency: 'hot' },
+  { name: 'Lisa Chen',   context: 'Sent 3 listings last week — no response. Re-engage.', type: 'EMAIL', urgency: 'warm' },
+  { name: '8812 Oak Ave', context: 'Counter offer expires today at 5pm. Buyer needs to respond.', type: 'URGENT', urgency: 'hot' },
+  { name: 'Priya R.',    context: 'Initial buyer consult scheduled for tomorrow. Send pre-meeting info.', type: 'EMAIL', urgency: 'warm' },
+  { name: 'Sam K.',      context: 'Check in 30 days post-close. Referral opportunity.', type: 'TEXT', urgency: '' },
+];
+
+const SCORE_COMPONENTS = [
+  { name: 'Response rate (last 14 days)', points: 22, max: 25 },
+  { name: 'Follow-up completion rate',    points: 18, max: 20 },
+  { name: 'Pipeline activity',            points: 16, max: 20 },
+  { name: 'Listing performance',          points: 14, max: 20 },
+  { name: 'Meridian platform engagement', points: 12, max: 15 },
+];
+
+const TOTAL_SCORE = SCORE_COMPONENTS.reduce((s, c) => s + c.points, 0);
+
+// ── Render ────────────────────────────────────────────────────────────────────
+document.getElementById('perf-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+// Stats
+document.getElementById('stat-grid').innerHTML = STATS.map(s => `
+  <div class="stat-card">
+    <p class="stat-card-label">${s.label}</p>
+    <p class="stat-card-value">${s.value}</p>
+    <p class="stat-card-sub">${s.sub}</p>
+  </div>
+`).join('');
+
+// Score
+document.getElementById('score-display').textContent = TOTAL_SCORE;
+document.getElementById('score-bar').style.width = TOTAL_SCORE + '%';
+
+// Follow-ups
+document.getElementById('follow-up-list').innerHTML = FOLLOW_UPS.map(f => `
+  <div class="fu-row">
+    <div>
+      <p class="fu-name">${f.name}</p>
+      <p class="fu-context">${f.context}</p>
+    </div>
+    <span class="fu-type">${f.type}</span>
+    <span class="fu-urgency ${f.urgency}">${f.urgency ? f.urgency.toUpperCase() : ''}</span>
+  </div>
+`).join('');
+
+// Score breakdown
+document.getElementById('breakdown-total').textContent = `${TOTAL_SCORE} / 100`;
+document.getElementById('breakdown-rows').innerHTML = SCORE_COMPONENTS.map(c => `
+  <div class="breakdown-row">
+    <span class="breakdown-item-name">${c.name}</span>
+    <span class="breakdown-pts">${c.points} / ${c.max}</span>
+    <div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width:${(c.points/c.max)*100}%"></div></div>
+  </div>
+`).join('');
+</script>
+</body>
+</html>

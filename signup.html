@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Get Started</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0A0A0A; --off-black: #111111; --surface: #1A1A1A;
+    --border: #2A2A2A; --border-light: #333333;
+    --white: #FFFFFF; --off-white: rgba(255,255,255,0.9); --muted: rgba(255,255,255,0.4); --dim: #2A2A2A;
+    --active: #00C48C; --active-bg: rgba(0,196,140,0.1);
+    --pending: #FFB800;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--black); color: var(--off-white);
+    font-family: 'Inter', sans-serif; font-weight: 300;
+    font-size: 14px; min-height: 100vh;
+  }
+  body::after {
+    content:''; position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:9999;
+  }
+
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    padding: 22px 48px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,6,6,0.96); backdrop-filter: blur(20px);
+  }
+  .nav-logo { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; letter-spacing:0.3em; color:var(--white); text-decoration:none; }
+  .nav-login { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em; color:var(--muted); text-decoration:none; transition:color 0.15s; }
+  .nav-login:hover { color: var(--off-white); }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 100px 48px 80px; }
+
+  /* HERO */
+  .hero { text-align:center; margin-bottom: 72px; }
+  .hero-eyebrow { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.3em; color:var(--muted); margin-bottom:20px; }
+  .hero-title { font-family:'Inter',sans-serif; font-size:52px; font-weight:300; color:var(--white); line-height:1.1; margin-bottom:16px; letter-spacing:-0.02em; }
+  .hero-sub { font-size:15px; color:var(--muted); line-height:1.7; max-width:480px; margin:0 auto; }
+
+  /* PLAN GRID */
+  .plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); margin-bottom:60px; }
+  .plan-card {
+    background: var(--surface); padding: 40px 36px;
+    position: relative; cursor:pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .plan-card:hover { background: #1F1F1F; }
+  .plan-card.selected { border-color: rgba(255,255,255,0.5); }
+  .plan-card.selected::after { content:'✓'; position:absolute; top:16px; right:20px; font-family:'DM Mono',monospace; font-size:11px; color:var(--off-white); }
+  .plan-tag { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.25em; color:var(--muted); margin-bottom:20px; }
+  .plan-tag.popular-tag { color: var(--active); }
+  .plan-name { font-family:'Inter',sans-serif; font-size:28px; font-weight:400; color:var(--white); margin-bottom:8px; letter-spacing:-0.01em; }
+  .plan-price { display:flex; align-items:baseline; gap:4px; margin-bottom:8px; }
+  .plan-amount { font-family:'DM Mono',monospace; font-size:36px; color:var(--white); }
+  .plan-period { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); }
+  .plan-tagline { font-size:13px; color:rgba(255,255,255,0.6); margin-bottom:24px; font-style:italic; }
+  .plan-desc { font-size:13px; color:var(--muted); line-height:1.7; margin-bottom:28px; }
+  .plan-features { list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .plan-features li { font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:flex-start; line-height:1.5; }
+  .plan-features li::before { content:'—'; color:var(--dim); flex-shrink:0; }
+  .plan-features li.active { color:rgba(255,255,255,0.8); }
+  .plan-features li.active::before { content:'✓'; color:var(--active); flex-shrink:0; }
+  .plan-features li.locked { color:rgba(255,255,255,0.2); }
+  .plan-features li.locked::before { content:'—'; color:var(--dim); flex-shrink:0; }
+
+  /* FORM */
+  .form-section { background:var(--surface); border:1px solid var(--border); padding:40px; margin-bottom:32px; }
+  .form-section-title { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.25em; color:var(--muted); margin-bottom:28px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .form-field { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  .field-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--muted); }
+  .field-input {
+    background: transparent; border: none; border-bottom: 1px solid var(--border);
+    color: var(--off-white); font-family:'Inter',sans-serif; font-size:14px; font-weight:300;
+    padding: 10px 0; outline:none; transition: border-color 0.15s; width:100%;
+  }
+  .field-input:focus { border-color: var(--off-white); }
+  .field-input::placeholder { color: var(--dim); }
+  .field-select {
+    background: var(--surface); border: 1px solid var(--border); border-radius:0;
+    color: var(--off-white); font-family:'Inter',sans-serif; font-size:14px; font-weight:300;
+    padding: 10px 12px; outline:none; width:100%; cursor:pointer; -webkit-appearance:none;
+    transition: border-color 0.15s;
+  }
+  .field-select:focus { border-color: var(--off-white); }
+
+  /* PAYMENT STRIP */
+  .payment-strip { background:var(--surface); border:1px solid var(--border); padding:40px; margin-bottom:32px; }
+  .stripe-note { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.12em; color:var(--muted); display:flex; align-items:center; gap:8px; margin-top:20px; }
+  .stripe-icon { width:8px; height:8px; background:var(--muted); border-radius:50%; flex-shrink:0; }
+
+  /* FAKE CARD FIELDS */
+  .card-row { display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; }
+
+  /* SUBMIT */
+  .btn-submit {
+    width:100%; background:var(--white); color:#0A0A0A;
+    border:none; padding:18px 32px;
+    font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.2em;
+    cursor:pointer; transition:opacity 0.2s;
+  }
+  .btn-submit:hover { opacity:0.88; }
+  .btn-submit:disabled { opacity:0.4; cursor:default; }
+
+  /* TRUST LINE */
+  .trust-line { text-align:center; margin-top:20px; font-size:11px; color:var(--muted); line-height:1.7; }
+  .trust-line a { color:var(--muted); text-decoration:underline; }
+
+  /* ORDER SUMMARY */
+  .order-summary { background:var(--off-black); border:1px solid var(--border); padding:24px; margin-bottom:32px; }
+  .order-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--muted); padding:6px 0; }
+  .order-row.total { border-top:1px solid var(--border); margin-top:8px; padding-top:14px; color:var(--off-white); font-family:'DM Mono',monospace; font-size:12px; }
+
+  /* SUCCESS STATE */
+  .success-overlay {
+    display:none; position:fixed; inset:0; background:var(--black);
+    flex-direction:column; align-items:center; justify-content:center;
+    z-index:200; text-align:center; padding:48px;
+  }
+  .success-overlay.visible { display:flex; }
+  .success-check { font-size:40px; margin-bottom:24px; }
+  .success-title { font-family:'Inter',sans-serif; font-size:48px; font-weight:300; color:var(--white); margin-bottom:12px; letter-spacing:-0.02em; }
+  .success-sub { font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:36px; max-width:400px; }
+  .success-steps { text-align:left; border:1px solid var(--border); padding:24px; margin-bottom:36px; max-width:400px; width:100%; }
+  .step-row { display:flex; gap:14px; align-items:flex-start; margin-bottom:16px; }
+  .step-row:last-child { margin-bottom:0; }
+  .step-num { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); flex-shrink:0; padding-top:2px; }
+  .step-text { font-size:13px; color:var(--off-white); line-height:1.6; }
+  .step-text small { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+  .btn-continue { background:var(--white); color:#0A0A0A; border:none; padding:16px 40px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.2em; cursor:pointer; }
+
+  @media (max-width:768px) {
+    nav { padding:18px 24px; }
+    .page { padding:88px 24px 60px; }
+    .hero-title { font-size:40px; }
+    .plan-grid { grid-template-columns:1fr; }
+    .form-row { grid-template-columns:1fr; }
+    .card-row { grid-template-columns:1fr; }
+    .form-section, .payment-strip { padding:24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="meridian-desk.html" class="nav-logo">MERIDIAN</a>
+  <a href="index.html" class="nav-login">ALREADY A MEMBER? SIGN IN →</a>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <p class="hero-eyebrow">GET STARTED</p>
+    <h1 class="hero-title">Your AI Chief of Staff<br>starts here.</h1>
+    <p class="hero-sub">Choose your plan, create your account, and Meridian will be running inside of two minutes.</p>
+  </div>
+
+  <!-- PLAN SELECTION -->
+  <div class="plan-grid" id="plan-grid">
+    <div class="plan-card selected" id="plan-core" onclick="selectPlan('core')">
+      <p class="plan-tag">CORE</p>
+      <h2 class="plan-name">Core</h2>
+      <div class="plan-price">
+        <span class="plan-amount">$197</span>
+        <span class="plan-period">/ mo</span>
+      </div>
+      <p class="plan-tagline">Everything you need to run your book of business.</p>
+      <ul class="plan-features">
+        <li class="active">AI-drafted client communications</li>
+        <li class="active">Morning briefing — daily priority summary</li>
+        <li class="active">Transaction dashboard (unlimited deals)</li>
+        <li class="active">Lead intake + follow-up cadence</li>
+        <li class="active">Offer builder + client explainer</li>
+        <li class="active">Market pulse reports (per zip code)</li>
+        <li class="active">Communication templates (6 types)</li>
+        <li class="locked">Email intelligence — Pro only</li>
+        <li class="locked">Calendar sync — Pro only</li>
+        <li class="locked">SMS follow-ups — Pro only</li>
+      </ul>
+    </div>
+    <div class="plan-card" id="plan-pro" onclick="selectPlan('pro')">
+      <p class="plan-tag popular-tag">PRO — MOST POPULAR</p>
+      <h2 class="plan-name">Pro</h2>
+      <div class="plan-price">
+        <span class="plan-amount">$297</span>
+        <span class="plan-period">/ mo</span>
+      </div>
+      <p class="plan-tagline">For agents running a full operation.</p>
+      <ul class="plan-features">
+        <li class="active">Everything in Core</li>
+        <li class="active">Email intelligence (parse + route threads)</li>
+        <li class="active">Google Calendar + Outlook sync</li>
+        <li class="active">DocuSign + SkySlope integration</li>
+        <li class="active">Twilio SMS on follow-up cards</li>
+        <li class="active">Gmail OAuth + Outlook OAuth</li>
+        <li class="active">Compliance checklist (4 municipalities)</li>
+        <li class="active">Agent performance dashboard</li>
+        <li class="active">Full transaction file system</li>
+        <li class="active">Priority support</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ORDER SUMMARY -->
+  <div class="order-summary">
+    <div class="order-row"><span>Selected plan</span><span id="summary-plan">Meridian Core</span></div>
+    <div class="order-row"><span>Billing cycle</span><span>Monthly, cancel anytime</span></div>
+    <div class="order-row"><span>Free trial</span><span>14 days included</span></div>
+    <div class="order-row total"><span>DUE TODAY</span><span id="summary-price">$0.00</span></div>
+  </div>
+
+  <!-- ACCOUNT FORM -->
+  <div class="form-section">
+    <p class="form-section-title">01 — YOUR ACCOUNT</p>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="field-label" for="f-fname">FIRST NAME</label>
+        <input class="field-input" type="text" id="f-fname" placeholder="Jordan" autocomplete="given-name">
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="f-lname">LAST NAME</label>
+        <input class="field-input" type="text" id="f-lname" placeholder="Ellis" autocomplete="family-name">
+      </div>
+    </div>
+    <div class="form-field">
+      <label class="field-label" for="f-email">EMAIL ADDRESS</label>
+      <input class="field-input" type="email" id="f-email" placeholder="jordan@compass.com" autocomplete="email">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="field-label" for="f-brokerage">BROKERAGE</label>
+        <input class="field-input" type="text" id="f-brokerage" placeholder="Compass" autocomplete="organization">
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="f-phone">PHONE (OPTIONAL)</label>
+        <input class="field-input" type="tel" id="f-phone" placeholder="(312) 555-0100" autocomplete="tel">
+      </div>
+    </div>
+    <div class="form-field">
+      <label class="field-label" for="f-password">CREATE PASSWORD</label>
+      <input class="field-input" type="password" id="f-password" placeholder="Min 8 characters" autocomplete="new-password">
+    </div>
+    <div class="form-field">
+      <label class="field-label" for="f-referral">REFERRAL CODE (OPTIONAL)</label>
+      <input class="field-input" type="text" id="f-referral" placeholder="e.g. EDDIE2024">
+    </div>
+  </div>
+
+  <!-- PAYMENT FORM -->
+  <div class="payment-strip" id="payment-strip">
+    <p class="form-section-title">02 — PAYMENT — 14-DAY FREE TRIAL · CANCEL ANYTIME</p>
+    <div class="form-field">
+      <label class="field-label" for="f-card">CARD NUMBER</label>
+      <input class="field-input" type="text" id="f-card" placeholder="4242 4242 4242 4242" maxlength="19" oninput="formatCard(this)">
+    </div>
+    <div class="card-row">
+      <div class="form-field">
+        <label class="field-label" for="f-expiry">EXPIRY</label>
+        <input class="field-input" type="text" id="f-expiry" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)">
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="f-cvc">CVC</label>
+        <input class="field-input" type="text" id="f-cvc" placeholder="•••" maxlength="4">
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="f-zip">ZIP</label>
+        <input class="field-input" type="text" id="f-zip" placeholder="60301" maxlength="5">
+      </div>
+    </div>
+    <div class="stripe-note">
+      <div class="stripe-icon"></div>
+      Secured by Stripe. Your card info never touches our servers.
+      Stripe Price IDs: Core <strong>price_CORE_ID</strong> · Pro <strong>price_PRO_ID</strong>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <button class="btn-submit" id="btn-submit" onclick="handleSubmit()">
+    START 14-DAY FREE TRIAL →
+  </button>
+  <p class="trust-line">
+    By continuing, you agree to Meridian's <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.<br>
+    You won't be charged until your trial ends. Cancel anytime from your account settings.
+  </p>
+
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-check">✓</div>
+  <h2 class="success-title">You're in.</h2>
+  <p class="success-sub">Your account is created. Your 14-day trial is active. A confirmation email is on its way.</p>
+  <div class="success-steps">
+    <div class="step-row">
+      <span class="step-num">01</span>
+      <div class="step-text">
+        Build your agent profile
+        <small>2 minutes · sets Meridian's voice, markets, and goals</small>
+      </div>
+    </div>
+    <div class="step-row">
+      <span class="step-num">02</span>
+      <div class="step-text">
+        Add your first transaction
+        <small>Paste an address · Meridian builds the timeline</small>
+      </div>
+    </div>
+    <div class="step-row">
+      <span class="step-num">03</span>
+      <div class="step-text">
+        Let Meridian run your morning briefing
+        <small>Every day at 8 AM · your full pipeline in 90 seconds</small>
+      </div>
+    </div>
+  </div>
+  <button class="btn-continue" onclick="continueToDashboard()">BUILD MY PROFILE →</button>
+</div>
+
+<script>
+let selectedPlan = 'core';
+
+const PLANS = {
+  core: { name: 'Meridian Core — $197/mo', price: '$0.00', stripe_price_id: 'price_MERIDIAN_CORE_MONTHLY' },
+  pro:  { name: 'Meridian Pro — $297/mo',  price: '$0.00', stripe_price_id: 'price_MERIDIAN_PRO_MONTHLY'  }
+};
+// $0.00 due today — 14-day free trial, billed after trial ends
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  document.getElementById('plan-core').classList.toggle('selected', plan === 'core');
+  document.getElementById('plan-pro').classList.toggle('selected', plan === 'pro');
+  document.getElementById('summary-plan').textContent = PLANS[plan].name;
+  document.getElementById('summary-price').textContent = PLANS[plan].price;
+}
+
+function formatCard(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,16);
+  el.value = v.replace(/(.{4})/g,'$1 ').trim();
+}
+
+function formatExpiry(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,4);
+  if (v.length >= 3) v = v.substring(0,2) + ' / ' + v.substring(2);
+  el.value = v;
+}
+
+function validateForm() {
+  const fname    = document.getElementById('f-fname').value.trim();
+  const lname    = document.getElementById('f-lname').value.trim();
+  const email    = document.getElementById('f-email').value.trim();
+  const brokerage = document.getElementById('f-brokerage').value.trim();
+  const password = document.getElementById('f-password').value;
+  const card     = document.getElementById('f-card').value.replace(/\s/g,'');
+
+  if (!fname)    { alert('First name is required.'); return false; }
+  if (!lname)    { alert('Last name is required.'); return false; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Valid email required.'); return false; }
+  if (!brokerage){ alert('Brokerage is required.'); return false; }
+  if (password.length < 8) { alert('Password must be at least 8 characters.'); return false; }
+  if (card.length < 15)    { alert('Please enter a valid card number.'); return false; }
+  return true;
+}
+
+async function handleSubmit() {
+  if (!validateForm()) return;
+
+  const btn = document.getElementById('btn-submit');
+  btn.textContent = 'PROCESSING…';
+  btn.disabled = true;
+
+  // Save account info to localStorage
+  const account = {
+    first_name: document.getElementById('f-fname').value.trim(),
+    last_name:  document.getElementById('f-lname').value.trim(),
+    email:      document.getElementById('f-email').value.trim().toLowerCase(),
+    brokerage:  document.getElementById('f-brokerage').value.trim(),
+    phone:      document.getElementById('f-phone').value.trim(),
+    plan:       selectedPlan,
+    stripe_price_id: PLANS[selectedPlan].stripe_price_id,
+    trial_start: new Date().toISOString(),
+    trial_end:   new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'trial'
+  };
+
+  try { localStorage.setItem('meridian_account', JSON.stringify(account)); } catch {}
+
+  // Also pre-seed the agent profile name/brokerage for onboarding
+  const existingProfile = JSON.parse(localStorage.getItem('meridian_agent_profile') || '{}');
+  if (!existingProfile?.agent?.name) {
+    const preProfile = {
+      schema_version: '1.0',
+      agent: { name: account.first_name + ' ' + account.last_name, brokerage: account.brokerage },
+      market_focus: [], client_type: null, communication_style: null,
+      average_price_range: { min: null, max: null, currency: 'USD' }, goals: []
+    };
+    try { localStorage.setItem('meridian_agent_profile', JSON.stringify(preProfile)); } catch {}
+  }
+
+  // Simulate Stripe Checkout session creation
+  // In production: POST to /api/create-checkout-session with { stripe_price_id, email }
+  // Then redirect to Stripe Checkout URL from response
+  await simulatePaymentProcessing();
+
+  document.getElementById('success-overlay').classList.add('visible');
+}
+
+function simulatePaymentProcessing() {
+  return new Promise(resolve => setTimeout(resolve, 1800));
+}
+
+function continueToDashboard() {
+  window.location.href = 'meridian-onboarding.html';
+}
+
+// On load: restore plan from URL param if present
+const urlPlan = new URLSearchParams(window.location.search).get('plan');
+if (urlPlan === 'pro') selectPlan('pro');
+
+// Keyboard: Enter submits
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('btn-submit').disabled) {
+    const active = document.activeElement;
+    if (active && ['INPUT','SELECT'].includes(active.tagName)) handleSubmit();
+  }
+});
+</script>
+</body>
+</html>

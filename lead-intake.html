@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Lead Intake</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root { --black:#060606;--off-black:#0e0e0e;--surface:#131313;--border:#1c1c1c;--border-light:#242424;--white:#f8f8f6;--off-white:#e8e8e4;--muted:#4a4a4a;--dim:#2a2a2a; }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { background:var(--black);color:var(--off-white);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh; }
+  body::after { content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999; }
+
+  nav { position:fixed;top:0;left:0;right:0;z-index:100;padding:24px 64px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.94);backdrop-filter:blur(20px); }
+  .nav-logo { font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.3em;color:var(--white); }
+  .nav-tag  { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted); }
+
+  .page-wrapper { padding:120px 64px 80px;max-width:860px;margin:0 auto; }
+  .page-header { margin-bottom:52px; }
+  .page-eyebrow { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--muted);margin-bottom:16px; }
+  .page-title { font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:var(--white);margin-bottom:8px; }
+  .page-sub { font-size:13px;color:var(--muted);line-height:1.6; }
+
+  .form-section { margin-bottom:48px;padding-bottom:48px;border-bottom:1px solid var(--border); }
+  .form-section:last-of-type { border-bottom:none; }
+  .section-label { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.25em;color:var(--muted);text-transform:uppercase;margin-bottom:24px; }
+
+  .field-row { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px; }
+  .field-row.single { grid-template-columns:1fr; }
+  .field { display:flex;flex-direction:column;gap:8px; }
+  label { font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase; }
+
+  input[type=text],input[type=number],input[type=tel],input[type=email],select,textarea {
+    background:var(--surface);border:1px solid var(--border-light);color:var(--off-white);
+    font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;padding:13px 16px;outline:none;
+    transition:border-color 0.2s;width:100%;
+  }
+  input:focus,select:focus,textarea:focus { border-color:var(--off-white); }
+  input::placeholder,textarea::placeholder { color:var(--muted);opacity:0.5; }
+  select { appearance:none;cursor:pointer; }
+  textarea { resize:vertical;min-height:80px;line-height:1.6; }
+
+  .pill-group { display:flex;flex-wrap:wrap;gap:8px; }
+  .pill-input { display:none; }
+  .pill-label { display:inline-block;padding:8px 16px;border:1px solid var(--border-light);font-size:12px;letter-spacing:0.08em;color:var(--muted);cursor:pointer;transition:all 0.15s;user-select:none; }
+  .pill-input:checked + .pill-label { border-color:var(--off-white);color:var(--off-white);background:rgba(248,248,246,0.04); }
+
+  .btn-submit { background:var(--off-white);color:var(--black);border:none;padding:16px 40px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s; }
+  .btn-submit:hover { opacity:0.85; }
+
+  /* Toast */
+  .save-toast { position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:#1A1A1A;border:1px solid #333;padding:14px 24px;display:flex;align-items:center;gap:12px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:500;border-radius:4px; }
+  .save-toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+  .toast-dot { width:8px;height:8px;border-radius:50%;background:#60A878;flex-shrink:0; }
+  .toast-text { font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;color:#e8e8e4; }
+  .toast-action { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;margin-left:8px;transition:color .15s; }
+  .toast-action:hover { color:#e8e8e4; }
+
+  /* Success state */
+  .success-panel { display:none;margin-top:48px;padding:32px;border:1px solid #1c1c1c;background:#0e0e0e;text-align:center; }
+  .success-panel.visible { display:block; }
+  .success-name { font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#f8f8f6;margin-bottom:8px; }
+  .success-sub { font-size:13px;color:#4a4a4a;margin-bottom:24px;line-height:1.6; }
+  .success-actions { display:flex;gap:12px;justify-content:center;flex-wrap:wrap; }
+  .success-btn { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;padding:11px 22px;cursor:pointer;transition:opacity .2s; }
+  .success-btn.primary { background:#e8e8e4;color:#060606;border:none; }
+  .success-btn.secondary { background:none;border:1px solid #242424;color:#4a4a4a; }
+  .success-btn:hover { opacity:0.8; }
+
+  @media (max-width:640px) { nav{padding:20px 24px;} .page-wrapper{padding:100px 24px 60px;} .field-row{grid-template-columns:1fr;} }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-tag">LEAD INTAKE</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <p class="page-eyebrow">New Client</p>
+    <h1 class="page-title">Lead Intake Form</h1>
+    <p class="page-sub">Capture client context once. Meridian uses it across all follow-ups, communications, and recommendations.</p>
+  </div>
+
+  <form id="lead-form" novalidate>
+
+    <div class="form-section">
+      <p class="section-label">01 — Client Info</p>
+      <div class="field-row">
+        <div class="field"><label>First Name</label><input type="text" id="cl-first" placeholder="Sarah"></div>
+        <div class="field"><label>Last Name</label><input type="text" id="cl-last" placeholder="Mitchell"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Phone</label><input type="tel" id="cl-phone" placeholder="(312) 555-0100"></div>
+        <div class="field"><label>Email</label><input type="email" id="cl-email" placeholder="sarah@email.com"></div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <p class="section-label">02 — Search Parameters</p>
+      <div class="field-row">
+        <div class="field"><label>Min Budget</label><input type="number" id="budget-min" placeholder="350000"></div>
+        <div class="field"><label>Max Budget</label><input type="number" id="budget-max" placeholder="600000"></div>
+      </div>
+      <div class="field-row single">
+        <div class="field"><label>Target Neighborhoods / Zip Codes</label><input type="text" id="cl-areas" placeholder="Oak Park, River Forest, 60301, 60305"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Timeline</label>
+          <select id="cl-timeline">
+            <option value="">Select timeline</option>
+            <option value="asap">ASAP (0–30 days)</option>
+            <option value="1_3mo">1–3 months</option>
+            <option value="3_6mo">3–6 months</option>
+            <option value="6_12mo">6–12 months</option>
+            <option value="exploring">Just exploring</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Client Type</label>
+          <select id="cl-type">
+            <option value="">Select type</option>
+            <option value="buyer">Buyer</option>
+            <option value="seller">Seller</option>
+            <option value="both">Buying & Selling</option>
+            <option value="investor">Investor</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <p class="section-label">03 — Must-Haves</p>
+      <div class="pill-group" id="musthave-group">
+        <input class="pill-input" type="checkbox" id="mh-garage" name="musthave" value="garage"><label class="pill-label" for="mh-garage">Garage</label>
+        <input class="pill-input" type="checkbox" id="mh-backyard" name="musthave" value="backyard"><label class="pill-label" for="mh-backyard">Backyard</label>
+        <input class="pill-input" type="checkbox" id="mh-basement" name="musthave" value="basement"><label class="pill-label" for="mh-basement">Basement</label>
+        <input class="pill-input" type="checkbox" id="mh-schools" name="musthave" value="top_schools"><label class="pill-label" for="mh-schools">Top Schools</label>
+        <input class="pill-input" type="checkbox" id="mh-walkable" name="musthave" value="walkable"><label class="pill-label" for="mh-walkable">Walkable</label>
+        <input class="pill-input" type="checkbox" id="mh-transit" name="musthave" value="transit_access"><label class="pill-label" for="mh-transit">Transit Access</label>
+        <input class="pill-input" type="checkbox" id="mh-home-office" name="musthave" value="home_office"><label class="pill-label" for="mh-home-office">Home Office</label>
+        <input class="pill-input" type="checkbox" id="mh-updated" name="musthave" value="updated_kitchen"><label class="pill-label" for="mh-updated">Updated Kitchen</label>
+      </div>
+      <div class="field-row single" style="margin-top:16px">
+        <div class="field"><label>Other Must-Haves</label><input type="text" id="mh-other" placeholder="e.g. Single story, no HOA, corner lot"></div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <p class="section-label">04 — Deal Breakers</p>
+      <div class="field-row single">
+        <div class="field"><label>Deal Breakers</label><textarea id="cl-dealbreakers" placeholder="e.g. Busy street, no parking, flood zone, more than 10 min from school district..."></textarea></div>
+      </div>
+    </div>
+
+    <div class="form-section" style="border-bottom:none;padding-bottom:0">
+      <p class="section-label">05 — Notes</p>
+      <div class="field-row single">
+        <div class="field"><label>Additional Context</label><textarea id="cl-notes" placeholder="Referred by Mike Torres. Currently renting in Berwyn. Dog owner — needs yard. Pre-approved at $575k."></textarea></div>
+      </div>
+    </div>
+
+    <div style="padding-top:40px">
+      <button type="submit" class="btn-submit">SAVE CLIENT PROFILE →</button>
+    </div>
+  </form>
+
+  <!-- Success state (replaces form after save) -->
+  <div class="success-panel" id="success-panel">
+    <p class="success-name" id="success-name"></p>
+    <p class="success-sub" id="success-sub"></p>
+    <div class="success-actions">
+      <button class="success-btn primary" onclick="saveAnother()">ADD ANOTHER CLIENT</button>
+      <a class="success-btn secondary" href="index.html">← BACK TO DASHBOARD</a>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="save-toast" id="save-toast">
+  <div class="toast-dot"></div>
+  <span class="toast-text" id="toast-text">Client profile saved.</span>
+</div>
+
+<script>
+const CADENCE_MAP = {
+  asap:       { cadence: 'daily',        first_contact: 'within 2 hours',  channel: 'phone',        note: 'High urgency — prioritize immediately.' },
+  '1_3mo':    { cadence: 'every_3_days', first_contact: 'within 24 hours', channel: 'email+phone',  note: 'Warm lead. Stay front of mind.' },
+  '3_6mo':    { cadence: 'weekly',       first_contact: 'within 48 hours', channel: 'email',        note: 'Nurture. Share relevant listings monthly.' },
+  '6_12mo':   { cadence: 'biweekly',     first_contact: 'this week',       channel: 'email',        note: 'Long-term nurture. Market update emails.' },
+  exploring:  { cadence: 'monthly',      first_contact: 'within 1 week',   channel: 'email',        note: 'Low urgency. Add to newsletter.' },
+};
+
+const TIMELINE_LABEL = {
+  asap: 'ASAP', '1_3mo': '1–3 months', '3_6mo': '3–6 months',
+  '6_12mo': '6–12 months', exploring: 'Just exploring',
+};
+
+document.getElementById('lead-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const firstName  = document.getElementById('cl-first').value.trim();
+  const lastName   = document.getElementById('cl-last').value.trim();
+  const timeline   = document.getElementById('cl-timeline').value;
+  const cadence    = CADENCE_MAP[timeline] || null;
+  const mustHaves  = [...document.querySelectorAll('input[name="musthave"]:checked')].map(el => el.value);
+  const otherMH    = document.getElementById('mh-other').value.trim();
+  if (otherMH) mustHaves.push(...otherMH.split(',').map(s => s.trim()).filter(Boolean));
+  const areas = document.getElementById('cl-areas').value.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+
+  const agentProfile = (() => { try { return JSON.parse(localStorage.getItem('meridian_agent_profile')); } catch { return null; } })();
+
+  const profile = {
+    schema_version: '1.0',
+    id: 'lead_' + Date.now(),
+    created_at: new Date().toISOString(),
+    agent_id: agentProfile?.agent?.name || null,
+    client: {
+      first_name:  firstName,
+      last_name:   lastName,
+      phone:       document.getElementById('cl-phone').value.trim(),
+      email:       document.getElementById('cl-email').value.trim(),
+      type:        document.getElementById('cl-type').value || null,
+    },
+    search: {
+      budget: {
+        min: parseFloat(document.getElementById('budget-min').value) || null,
+        max: parseFloat(document.getElementById('budget-max').value) || null,
+        currency: 'USD',
+      },
+      areas,
+      timeline,
+      must_haves: mustHaves,
+      deal_breakers: document.getElementById('cl-dealbreakers').value.trim() || null,
+    },
+    notes: document.getElementById('cl-notes').value.trim() || null,
+    follow_up: cadence ? {
+      cadence:           cadence.cadence,
+      first_contact:     cadence.first_contact,
+      preferred_channel: cadence.channel,
+      agent_note:        cadence.note,
+    } : null,
+  };
+
+  // Silent save to localStorage
+  try {
+    const existing = JSON.parse(localStorage.getItem('meridian_leads') || '[]');
+    existing.push(profile);
+    localStorage.setItem('meridian_leads', JSON.stringify(existing));
+  } catch(err) {
+    console.warn('Could not save lead profile:', err);
+  }
+
+  // Show success panel
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'New Client';
+  const budMin = parseFloat(document.getElementById('budget-min').value);
+  const budMax = parseFloat(document.getElementById('budget-max').value);
+  const budStr = (budMin && budMax) ? `$${(budMin/1000).toFixed(0)}K–$${(budMax/1000).toFixed(0)}K budget` : '';
+  const timeStr = TIMELINE_LABEL[timeline] || '';
+  const subParts = [budStr, timeStr].filter(Boolean);
+
+  document.getElementById('success-name').textContent = fullName + ' — profile saved.';
+  document.getElementById('success-sub').textContent = subParts.length
+    ? subParts.join(' · ') + '. Follow-up cadence set to ' + (cadence?.cadence || 'manual') + '.'
+    : 'Client profile has been saved to your pipeline.';
+
+  document.getElementById('lead-form').style.display = 'none';
+  document.getElementById('success-panel').classList.add('visible');
+
+  // Also show toast
+  showToast(fullName + ' added to your pipeline.');
+});
+
+function showToast(msg) {
+  const t = document.getElementById('save-toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function saveAnother() {
+  document.getElementById('lead-form').reset();
+  document.getElementById('lead-form').style.display = '';
+  document.getElementById('success-panel').classList.remove('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

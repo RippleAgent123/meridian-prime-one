@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Welcome to Meridian</title>
+<!--[if mso]>
+<noscript>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+</noscript>
+<![endif]-->
+<style>
+  /* Reset */
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+  body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+
+  @media screen and (max-width: 600px) {
+    .email-wrapper { width: 100% !important; }
+    .email-body    { padding: 32px 24px !important; }
+    .btn-table     { width: 100% !important; }
+    .btn-td        { text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#060606;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+<!-- Preheader (hidden preview text) -->
+<div style="display:none;max-height:0;overflow:hidden;color:#060606;font-size:1px;">
+  You're in. Here's everything that's now unlocked in your Meridian account.
+</div>
+
+<!-- Wrapper -->
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#060606;">
+  <tr>
+    <td align="center" style="padding:48px 16px;">
+
+      <!-- Email container -->
+      <table class="email-wrapper" role="presentation" border="0" cellpadding="0" cellspacing="0" width="560" style="background-color:#0e0e0e;border:1px solid #1c1c1c;">
+
+        <!-- Header -->
+        <tr>
+          <td style="padding:40px 48px 32px;border-bottom:1px solid #1c1c1c;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td>
+                  <span style="font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;letter-spacing:0.3em;color:#f8f8f6;text-transform:uppercase;">MERIDIAN</span>
+                </td>
+                <td align="right">
+                  <!-- Tier badge — dynamically set via {{tier}} -->
+                  <span style="font-family:'Courier New',Courier,monospace;font-size:9px;letter-spacing:0.2em;color:#4a4a4a;text-transform:uppercase;border:1px solid #242424;padding:4px 10px;">
+                    {{tier}} PLAN
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td class="email-body" style="padding:48px 48px 40px;">
+
+            <!-- Greeting -->
+            <p style="margin:0 0 8px;font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.25em;color:#4a4a4a;text-transform:uppercase;">
+              Welcome
+            </p>
+            <h1 style="margin:0 0 32px;font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;font-style:italic;color:#f8f8f6;line-height:1.2;">
+              You're in, {{agent_name}}.
+            </h1>
+
+            <!-- Subject line copy -->
+            <p style="margin:0 0 32px;font-size:14px;line-height:1.7;color:#888;font-weight:300;">
+              Your <strong style="color:#e8e8e4;font-weight:400;">{{tier}} plan</strong> is active. Meridian is now calibrated and ready. Here's what you have access to — and what to do next.
+            </p>
+
+            <!-- Divider -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+              <tr><td style="border-top:1px solid #1c1c1c;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+
+            <!-- What's unlocked -->
+            <p style="margin:0 0 20px;font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.2em;color:#4a4a4a;text-transform:uppercase;">
+              What's Unlocked
+            </p>
+
+            <!-- Feature list -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:40px;">
+
+              <!-- Feature row -->
+              <tr>
+                <td style="padding:14px 0;border-bottom:1px solid #1c1c1c;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td width="20" valign="top" style="padding-top:1px;">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a4a4a;">—</span>
+                      </td>
+                      <td>
+                        <p style="margin:0 0 2px;font-size:13px;color:#e8e8e4;font-weight:400;">Content Generator</p>
+                        <p style="margin:0;font-size:12px;color:#4a4a4a;line-height:1.5;">AI-drafted listing copy, follow-up emails, and client updates.</p>
+                      </td>
+                      <td align="right" valign="top">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:10px;color:#4a4a4a;">{{content_limit}}</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:14px 0;border-bottom:1px solid #1c1c1c;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td width="20" valign="top" style="padding-top:1px;">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a4a4a;">—</span>
+                      </td>
+                      <td>
+                        <p style="margin:0 0 2px;font-size:13px;color:#e8e8e4;font-weight:400;">Market Pulse</p>
+                        <p style="margin:0;font-size:12px;color:#4a4a4a;line-height:1.5;">Live market data for your focus areas. {{market_history}}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:14px 0;border-bottom:1px solid #1c1c1c;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td width="20" valign="top" style="padding-top:1px;">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a4a4a;">—</span>
+                      </td>
+                      <td>
+                        <p style="margin:0 0 2px;font-size:13px;color:#e8e8e4;font-weight:400;">Compliance Checklist</p>
+                        <p style="margin:0;font-size:12px;color:#4a4a4a;line-height:1.5;">Municipality-specific checklists for Berwyn, Cicero, Chicago, Oak Park.</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:14px 0;border-bottom:1px solid #1c1c1c;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td width="20" valign="top" style="padding-top:1px;">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a4a4a;">—</span>
+                      </td>
+                      <td>
+                        <p style="margin:0 0 2px;font-size:13px;color:#e8e8e4;font-weight:400;">Email Intelligence</p>
+                        <p style="margin:0;font-size:12px;color:#4a4a4a;line-height:1.5;">
+                          {{email_intelligence_status}}
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:14px 0;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td width="20" valign="top" style="padding-top:1px;">
+                        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a4a4a;">—</span>
+                      </td>
+                      <td>
+                        <p style="margin:0 0 2px;font-size:13px;color:#e8e8e4;font-weight:400;">Transaction History</p>
+                        <p style="margin:0;font-size:12px;color:#4a4a4a;line-height:1.5;">{{transaction_history_status}}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+            </table>
+
+            <!-- Divider -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+              <tr><td style="border-top:1px solid #1c1c1c;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+
+            <!-- Next step -->
+            <p style="margin:0 0 20px;font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.2em;color:#4a4a4a;text-transform:uppercase;">
+              Next Step
+            </p>
+            <p style="margin:0 0 28px;font-size:14px;line-height:1.7;color:#888;">
+              Complete your agent profile so Meridian can calibrate its AI layer to your market, clients, and communication style. It takes two minutes.
+            </p>
+
+            <!-- CTA Button -->
+            <table class="btn-table" role="presentation" border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="btn-td" align="left">
+                  <a href="{{login_link}}"
+                     style="display:inline-block;background-color:#f8f8f6;color:#060606;font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;letter-spacing:0.2em;text-decoration:none;text-transform:uppercase;padding:16px 36px;">
+                    Complete Your Profile
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:28px 48px;border-top:1px solid #1c1c1c;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td>
+                  <p style="margin:0 0 4px;font-family:'Courier New',Courier,monospace;font-size:9px;letter-spacing:0.2em;color:#2a2a2a;text-transform:uppercase;">MERIDIAN</p>
+                  <p style="margin:0;font-size:11px;color:#2a2a2a;line-height:1.5;">
+                    AI Chief of Staff for real estate agents.<br>
+                    You received this because you purchased a Meridian plan.<br>
+                    <a href="{{unsubscribe_link}}" style="color:#2a2a2a;text-decoration:underline;">Unsubscribe</a>
+                  </p>
+                </td>
+                <td align="right" valign="top">
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:9px;color:#2a2a2a;">{{current_date}}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+      <!-- /Email container -->
+
+    </td>
+  </tr>
+</table>
+
+<!--
+TEMPLATE VARIABLES (replace before sending):
+  {{agent_name}}               — e.g. "Jordan Ellis"
+  {{tier}}                     — "Core" or "Pro"
+  {{login_link}}               — https://meridian-prime-one.vercel.app/login
+  {{content_limit}}            — "15/mo" (Core) or "Unlimited" (Pro)
+  {{market_history}}           — "Current month only." (Core) or "Full history included." (Pro)
+  {{email_intelligence_status}}— "Included with your Pro plan." or "Upgrade to Pro to unlock."
+  {{transaction_history_status}}— "Last 45 days." (Core) or "Full history." (Pro)
+  {{unsubscribe_link}}         — your unsubscribe URL
+  {{current_date}}             — e.g. "March 10, 2026"
+-->
+
+</body>
+</html>

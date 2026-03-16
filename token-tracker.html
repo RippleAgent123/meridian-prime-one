@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Token Usage</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #060606;
+    --off-black: #0e0e0e;
+    --surface: #131313;
+    --border: #1c1c1c;
+    --border-light: #242424;
+    --white: #f8f8f6;
+    --off-white: #e8e8e4;
+    --muted: #4a4a4a;
+    --dim: #2a2a2a;
+    --alert: #7a3030;
+    --alert-text: #c06060;
+    --warn-text: #c09060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--black);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 24px 64px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,6,6,0.94);
+    backdrop-filter: blur(20px);
+  }
+  .nav-logo { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.3em; color: var(--white); }
+  .nav-tag  { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); }
+
+  .page-wrapper { padding: 120px 64px 80px; max-width: 1100px; margin: 0 auto; }
+
+  .page-header { margin-bottom: 48px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; color: var(--white); }
+  .page-date { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); }
+
+  /* SUMMARY STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .stat-block {
+    background: var(--off-black);
+    padding: 28px 28px 24px;
+  }
+
+  .stat-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--white); line-height: 1; margin-bottom: 4px; }
+  .stat-sub { font-size: 11px; color: var(--muted); }
+
+  /* PER-AGENT TABLE */
+  .section-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 16px; }
+
+  .agent-table { width: 100%; border: 1px solid var(--border); border-collapse: collapse; }
+
+  .agent-table th {
+    text-align: left;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+    background: var(--off-black);
+  }
+
+  .agent-table td {
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--off-white);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .agent-table tr:last-child td { border-bottom: none; }
+  .agent-table tr:hover td { background: rgba(255,255,255,0.01); }
+
+  .agent-name { font-size: 13px; }
+  .mono { font-family: 'Space Mono', monospace; font-size: 11px; }
+
+  /* USAGE BAR INLINE */
+  .bar-wrap { width: 120px; }
+  .bar-track { height: 2px; background: var(--dim); }
+  .bar-fill { height: 100%; background: var(--off-white); transition: width 0.4s; }
+  .bar-fill.warn  { background: var(--warn-text); }
+  .bar-fill.alert { background: var(--alert-text); }
+
+  /* STATUS BADGE */
+  .status-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px; letter-spacing: 0.1em;
+    padding: 3px 8px; border: 1px solid;
+  }
+  .status-badge.ok    { border-color: var(--border-light); color: var(--muted); }
+  .status-badge.warn  { border-color: #5a4020; color: var(--warn-text); }
+  .status-badge.alert { border-color: var(--alert); color: var(--alert-text); }
+
+  /* DAILY CHART */
+  .chart-section { margin-top: 48px; }
+  .chart-wrap {
+    border: 1px solid var(--border);
+    padding: 28px;
+    background: var(--off-black);
+    margin-top: 16px;
+  }
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 80px;
+    margin-bottom: 8px;
+  }
+  .chart-bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 4px; }
+  .chart-bar {
+    width: 100%;
+    background: var(--dim);
+    transition: background 0.15s;
+    min-height: 2px;
+  }
+  .chart-bar:hover { background: var(--muted); }
+  .chart-bar.today { background: rgba(248,248,246,0.3); }
+  .chart-bar-label { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted); }
+  .chart-meta { display: flex; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+  .threshold-note {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--alert);
+    background: rgba(122,48,48,0.06);
+    font-size: 12px;
+    color: var(--alert-text);
+    display: none;
+  }
+  .threshold-note.visible { display: block; }
+
+  @media (max-width: 800px) {
+    nav { padding: 20px 24px; }
+    .page-wrapper { padding: 100px 24px 60px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <span class="nav-tag">TOKEN USAGE TRACKER</span>
+</nav>
+
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <h1 class="page-title">Token Usage</h1>
+    <span class="page-date" id="current-date"></span>
+  </div>
+
+  <!-- SUMMARY STATS -->
+  <div class="stats-row" id="stats-row"></div>
+
+  <!-- PER-AGENT TABLE -->
+  <p class="section-label">PER AGENT — CURRENT MONTH</p>
+  <table class="agent-table" id="agent-table">
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>Input Tokens</th>
+        <th>Output Tokens</th>
+        <th>Total Tokens</th>
+        <th>Est. Cost</th>
+        <th>Monthly Projection</th>
+        <th>Usage</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="agent-tbody"></tbody>
+  </table>
+
+  <!-- DAILY CHART -->
+  <div class="chart-section">
+    <p class="section-label">DAILY USAGE — LAST 10 DAYS (ALL AGENTS)</p>
+    <div class="chart-wrap">
+      <div class="chart-bars" id="chart-bars"></div>
+      <div class="chart-meta">
+        <span id="chart-low"></span>
+        <span id="chart-high"></span>
+      </div>
+    </div>
+    <div class="threshold-note" id="threshold-note">
+      One or more agents are approaching their monthly token threshold. Review usage below and consider adjusting limits.
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Sample data ──────────────────────────────────────────────────────────────
+// Model pricing: claude-haiku-4-5 — $0.80/M input, $4.00/M output
+const INPUT_COST_PER_M  = 0.80;
+const OUTPUT_COST_PER_M = 4.00;
+const MONTHLY_THRESHOLD = 500_000; // tokens — alert at 80%
+
+const AGENTS = [
+  { name: 'Jordan Ellis',   input: 84200,  output: 21050 },
+  { name: 'Maria Vasquez',  input: 210400, output: 52600 },
+  { name: 'Derek Owens',    input: 42100,  output: 10525 },
+  { name: 'Priya Nair',     input: 318600, output: 79650 },
+  { name: 'Sam Kowalski',   input: 15800,  output: 3950  },
+];
+
+const DAILY_TOTALS = [28400, 41200, 35700, 52100, 47300, 61800, 55200, 49600, 72100, 83400]; // last 10 days
+const DAY_LABELS   = ['Mar 1','Mar 2','Mar 3','Mar 4','Mar 5','Mar 6','Mar 7','Mar 8','Mar 9','Mar 10'];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmtTokens(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'k';
+  return n.toString();
+}
+
+function fmtCost(n) {
+  return '$' + n.toFixed(2);
+}
+
+function calcCost(input, output) {
+  return (input / 1_000_000) * INPUT_COST_PER_M + (output / 1_000_000) * OUTPUT_COST_PER_M;
+}
+
+function dayOfMonth() {
+  return new Date().getDate();
+}
+
+function projectMonthly(total) {
+  const day = dayOfMonth();
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  return Math.round((total / day) * daysInMonth);
+}
+
+function statusFor(total) {
+  const pct = total / MONTHLY_THRESHOLD;
+  if (pct >= 0.8) return 'alert';
+  if (pct >= 0.5) return 'warn';
+  return 'ok';
+}
+
+// ── Render summary stats ────────────────────────────────────────────────────
+function renderStats() {
+  const totalInput  = AGENTS.reduce((s, a) => s + a.input, 0);
+  const totalOutput = AGENTS.reduce((s, a) => s + a.output, 0);
+  const totalTokens = totalInput + totalOutput;
+  const totalCost   = calcCost(totalInput, totalOutput);
+  const projection  = projectMonthly(totalCost);
+
+  const stats = [
+    { label: 'Total Tokens (MTD)',  value: fmtTokens(totalTokens), sub: `${fmtTokens(totalInput)} in · ${fmtTokens(totalOutput)} out` },
+    { label: 'Estimated Cost (MTD)', value: fmtCost(totalCost),     sub: 'claude-haiku-4-5' },
+    { label: 'Monthly Projection',  value: fmtCost(projection),    sub: `Based on day ${dayOfMonth()} of ${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}` },
+    { label: 'Active Agents',       value: AGENTS.length,           sub: 'this month' },
+  ];
+
+  document.getElementById('stats-row').innerHTML = stats.map(s => `
+    <div class="stat-block">
+      <p class="stat-label">${s.label}</p>
+      <p class="stat-value">${s.value}</p>
+      <p class="stat-sub">${s.sub}</p>
+    </div>
+  `).join('');
+}
+
+// ── Render agent table ──────────────────────────────────────────────────────
+function renderTable() {
+  let hasAlert = false;
+
+  const rows = AGENTS.map(a => {
+    const total      = a.input + a.output;
+    const cost       = calcCost(a.input, a.output);
+    const projection = projectMonthly(cost);
+    const pct        = Math.min((total / MONTHLY_THRESHOLD) * 100, 100);
+    const status     = statusFor(total);
+    if (status === 'alert' || status === 'warn') hasAlert = true;
+
+    const barClass = status === 'ok' ? '' : status;
+    const badgeLabel = status === 'ok' ? 'ON TRACK' : status === 'warn' ? 'WATCH' : 'NEAR LIMIT';
+
+    return `
+      <tr>
+        <td class="agent-name">${a.name}</td>
+        <td class="mono">${fmtTokens(a.input)}</td>
+        <td class="mono">${fmtTokens(a.output)}</td>
+        <td class="mono">${fmtTokens(total)}</td>
+        <td class="mono">${fmtCost(cost)}</td>
+        <td class="mono">${fmtCost(projection)}/mo</td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
+          </div>
+        </td>
+        <td><span class="status-badge ${status}">${badgeLabel}</span></td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('agent-tbody').innerHTML = rows;
+
+  if (hasAlert) {
+    document.getElementById('threshold-note').classList.add('visible');
+  }
+}
+
+// ── Render daily chart ──────────────────────────────────────────────────────
+function renderChart() {
+  const max = Math.max(...DAILY_TOTALS);
+  const min = Math.min(...DAILY_TOTALS);
+
+  const bars = DAILY_TOTALS.map((val, i) => {
+    const heightPct = Math.round((val / max) * 100);
+    const isToday   = i === DAILY_TOTALS.length - 1;
+    return `
+      <div class="chart-bar-col" title="${DAY_LABELS[i]}: ${fmtTokens(val)} tokens">
+        <div class="chart-bar${isToday ? ' today' : ''}" style="height:${heightPct}%"></div>
+        <span class="chart-bar-label">${DAY_LABELS[i].split(' ')[1]}</span>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('chart-bars').innerHTML = bars;
+  document.getElementById('chart-low').textContent  = `Low: ${fmtTokens(min)}`;
+  document.getElementById('chart-high').textContent = `High: ${fmtTokens(max)}`;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.getElementById('current-date').textContent =
+  new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+renderStats();
+renderTable();
+renderChart();
+</script>
+
+</body>
+</html>

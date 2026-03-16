@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Transaction Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:#060606; --off-black:#0e0e0e; --surface:#131313;
+    --border:#1c1c1c; --border-light:#242424; --white:#f8f8f6;
+    --off-white:#e8e8e4; --muted:#4a4a4a; --dim:#2a2a2a;
+    --green:#60a060; --yellow:#a0a060; --red:#c06060; --blue:#6090c0;
+  }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { background:var(--black);color:var(--off-white);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh; }
+  body::after { content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999; }
+
+  nav { position:fixed;top:0;left:0;right:0;z-index:100;padding:24px 64px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.94);backdrop-filter:blur(20px); }
+  .nav-logo { font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.3em;color:var(--white); }
+  .nav-right { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--muted); }
+
+  .page-wrapper { padding:120px 64px 80px;max-width:1100px;margin:0 auto; }
+  .page-header { margin-bottom:32px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px; }
+  .page-header-left {}
+  .page-eyebrow { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--muted);margin-bottom:12px; }
+  .page-title { font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;color:var(--white); }
+
+  .btn-add-deal { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;background:var(--white);color:var(--black);border:none;padding:12px 24px;cursor:pointer;transition:opacity .2s;white-space:nowrap; }
+  .btn-add-deal:hover { opacity:.85; }
+
+  /* DEMO BANNER */
+  .demo-banner { background:rgba(160,160,96,0.08);border:1px solid rgba(160,160,96,0.2);padding:12px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px; }
+  .demo-banner-text { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#a0a060; }
+  .demo-banner-sub { font-size:12px;color:var(--muted);margin-top:2px; }
+
+  /* DEAL LIST */
+  .deal-list { display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border); }
+  .deal-row { background:var(--off-black);cursor:pointer;transition:background .15s; }
+  .deal-row:hover { background:var(--surface); }
+  .deal-row.open { background:var(--surface); }
+
+  .deal-summary { display:grid;grid-template-columns:1fr auto auto auto auto;gap:20px;align-items:center;padding:20px 28px; }
+  .deal-address { font-size:14px;color:var(--off-white); }
+  .deal-client { font-size:12px;color:var(--muted);margin-top:3px; }
+
+  .deal-stage { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.15em;padding:4px 10px;border:1px solid var(--border-light);color:var(--muted);white-space:nowrap; }
+  .deal-stage.stage-offer   { border-color:#3a3a20;color:var(--yellow); }
+  .deal-stage.stage-pending { border-color:#203a20;color:var(--green); }
+  .deal-stage.stage-closing { border-color:#20283a;color:var(--blue); }
+  .deal-stage.stage-listed  { border-color:#3a2020;color:var(--red); }
+
+  .deal-price { font-family:'Space Mono',monospace;font-size:11px;color:var(--muted); }
+  .deal-chevron { font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);transition:transform .2s;user-select:none; }
+  .deal-row.open .deal-chevron { transform:rotate(90deg); }
+
+  /* DETAIL */
+  .deal-detail { display:none;padding:0 28px 28px;border-top:1px solid var(--border); }
+  .deal-row.open .deal-detail { display:block; }
+
+  .detail-grid { display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;padding-top:24px;margin-bottom:24px; }
+  .detail-block { display:flex;flex-direction:column;gap:6px; }
+  .detail-label { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase; }
+  .detail-value { font-size:13px;color:var(--off-white);line-height:1.4; }
+
+  .outstanding-list { display:flex;flex-direction:column;gap:6px;margin-top:4px; }
+  .outstanding-item { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted); }
+  .outstanding-item::before { content:'';width:4px;height:4px;background:var(--muted);flex-shrink:0; }
+  .outstanding-item.urgent { color:var(--red); }
+  .outstanding-item.urgent::before { background:var(--red); }
+
+  .next-action-block { padding:16px 20px;background:rgba(248,248,246,0.03);border:1px solid var(--border-light);display:flex;align-items:flex-start;gap:14px;margin-bottom:16px; }
+  .next-action-prefix { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.15em;color:var(--muted);white-space:nowrap;padding-top:2px;flex-shrink:0; }
+  .next-action-text { font-size:13px;color:var(--off-white);line-height:1.5; }
+
+  .deal-actions { display:flex;gap:8px;justify-content:flex-end; }
+  .btn-deal-action { font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.12em;background:none;border:1px solid var(--border-light);color:var(--muted);padding:7px 14px;cursor:pointer;transition:all .15s; }
+  .btn-deal-action:hover { color:var(--off-white);border-color:var(--off-white); }
+  .btn-deal-action.danger:hover { color:var(--red);border-color:var(--red); }
+
+  /* EMPTY STATE */
+  .empty-state { padding:64px 28px;text-align:center;border:1px solid var(--border); }
+  .empty-title { font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.2em;color:var(--muted);margin-bottom:12px; }
+  .empty-sub { font-size:13px;color:var(--muted);line-height:1.6;max-width:360px;margin:0 auto 24px; }
+
+  /* MODAL */
+  .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:24px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface);border:1px solid var(--border-light);width:100%;max-width:580px;max-height:90vh;overflow-y:auto; }
+  .modal-header { padding:24px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center; }
+  .modal-title { font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.2em;color:var(--white); }
+  .modal-close { font-family:'Space Mono',monospace;font-size:14px;color:var(--muted);background:none;border:none;cursor:pointer;line-height:1; }
+  .modal-close:hover { color:var(--off-white); }
+  .modal-body { padding:28px; }
+  .modal-footer { padding:20px 28px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end; }
+
+  .form-group { margin-bottom:20px; }
+  .form-group label { display:block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.15em;color:var(--muted);margin-bottom:8px;text-transform:uppercase; }
+  .form-group input,.form-group select,.form-group textarea { width:100%;background:var(--off-black);border:1px solid var(--border-light);color:var(--off-white);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;padding:11px 14px;outline:none;transition:border-color .2s;border-radius:0; }
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus { border-color:rgba(248,248,246,0.3); }
+  .form-group select { appearance:none;cursor:pointer; }
+  .form-group textarea { resize:vertical;min-height:80px;line-height:1.5; }
+  .form-row { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+
+  .btn-save { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;background:var(--white);color:var(--black);border:none;padding:12px 24px;cursor:pointer;transition:opacity .2s; }
+  .btn-save:hover { opacity:.85; }
+  .btn-cancel { font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.15em;background:none;color:var(--muted);border:1px solid var(--border-light);padding:12px 20px;cursor:pointer;transition:all .15s; }
+  .btn-cancel:hover { color:var(--off-white);border-color:var(--off-white); }
+
+  @media (max-width:700px) {
+    nav { padding:20px 24px; }
+    .page-wrapper { padding:100px 24px 60px; }
+    .deal-summary { grid-template-columns:1fr auto; }
+    .deal-price,.deal-stage { display:none; }
+    .detail-grid,.form-row { grid-template-columns:1fr; }
+  }
+</style>
+<script src="nav.js"></script>
+</head>
+<body>
+
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#4a4a4a;text-decoration:none;" onmouseover="this.style.color='#e8e8e4'" onmouseout="this.style.color='#4a4a4a'">← DASHBOARD</a>
+  <span class="nav-right">TRANSACTION PIPELINE</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <div class="page-header-left">
+      <p class="page-eyebrow">Active Deals</p>
+      <h1 class="page-title">Transaction Pipeline</h1>
+    </div>
+    <button class="btn-add-deal" onclick="openModal()">+ ADD DEAL</button>
+  </div>
+
+  <div id="demo-banner" style="display:none" class="demo-banner">
+    <div>
+      <p class="demo-banner-text">◎ DEMO DATA</p>
+      <p class="demo-banner-sub">Showing sample deals. Click "+ ADD DEAL" to enter your real transactions.</p>
+    </div>
+  </div>
+
+  <div class="deal-list" id="deal-list"></div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">ADD DEAL</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-group">
+        <label>Property Address</label>
+        <input type="text" id="f-address" placeholder="8812 Oak Ave, Berwyn, IL 60402">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client Name(s)</label>
+          <input type="text" id="f-client" placeholder="Sarah & James Johnson">
+        </div>
+        <div class="form-group">
+          <label>Your Side</label>
+          <select id="f-side">
+            <option value="buyer">Buyer's Agent</option>
+            <option value="seller">Listing Agent</option>
+            <option value="dual">Dual Agency</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Stage</label>
+          <select id="f-stage">
+            <option value="offer">Offer Stage</option>
+            <option value="pending">Under Contract</option>
+            <option value="closing">In Closing</option>
+            <option value="listed">Active Listing</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sale Price ($)</label>
+          <input type="number" id="f-price" placeholder="489000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Closing Date</label>
+          <input type="date" id="f-closing">
+        </div>
+        <div class="form-group">
+          <label>Inspection Deadline</label>
+          <input type="date" id="f-inspection">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Next Action</label>
+        <textarea id="f-nextaction" placeholder="What needs to happen next on this deal?"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Outstanding Items (one per line)</label>
+        <textarea id="f-outstanding" placeholder="HOA docs not received&#10;Final walkthrough scheduled&#10;Wire instructions confirmed"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
+      <button class="btn-save" onclick="saveDeal()">SAVE DEAL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'meridian_transactions';
+
+const STAGE_LABELS = {
+  offer:   'OFFER STAGE',
+  pending: 'UNDER CONTRACT',
+  closing: 'IN CLOSING',
+  listed:  'ACTIVE LISTING',
+};
+
+const DEMO_DEALS = [
+  { id:'demo-1', address:'8812 Oak Ave, Berwyn, IL 60402',          client:'Johnson Family',   side:'buyer',  stage:'closing', price:489000, closingDate:'2026-03-21', inspectionDate:'',         nextAction:'Follow up with listing agent re: HOA docs — closing is 13 days out.', outstanding:['Final walkthrough scheduled for Mar 18','HOA docs not yet received from seller|urgent','Wire instructions confirmed with title'] },
+  { id:'demo-2', address:'1140 Ridgeway Blvd, Oak Park, IL 60302',  client:'Patel Family',     side:'buyer',  stage:'pending', price:675000, closingDate:'2026-04-04', inspectionDate:'2026-03-13', nextAction:'Call buyer today to review inspection findings. Attorney review closes in 3 days.', outstanding:['Inspection report review — 3 days remaining|urgent','Radon mitigation estimate requested','Attorney review ends Mar 13'] },
+  { id:'demo-3', address:'320 S. Clinton St, Chicago, IL 60661',    client:'Torres / Buyers',  side:'buyer',  stage:'offer',   price:1150000,closingDate:'',           inspectionDate:'',         nextAction:'Urgent: get updated pre-approval before responding to counter. Expires in 36 hours.', outstanding:['Seller counter expires Mar 11 at 5pm|urgent','Pre-approval letter expired Feb 28|urgent','Competing offer rumored'] },
+  { id:'demo-4', address:'4450 W. Cermak Rd, Cicero, IL 60804',    client:'Seller: Ramirez',  side:'seller', stage:'listed',  price:299000, closingDate:'',           inspectionDate:'',         nextAction:'Schedule call with sellers to discuss $10k price reduction. 12 days on market.', outstanding:['12 days on market — consider price adjustment','Open house: 4 showings, 0 offers','Professional photos scheduled Mar 12'] },
+  { id:'demo-5', address:'712 S. Harrison St, Chicago, IL 60607',   client:'Webb Family',      side:'buyer',  stage:'pending', price:540000, closingDate:'2026-03-28', inspectionDate:'',         nextAction:'Check in with lender on bank statement status. Monitor appraisal closely.', outstanding:["Appraisal ordered — results expected Mar 14","Lender requested 2 months additional bank statements"] },
+];
+
+// ── DATA ──────────────────────────────────────────────────────
+function loadDeals() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return { deals: parsed, isDemo: false };
+    }
+  } catch {}
+  return { deals: DEMO_DEALS, isDemo: true };
+}
+
+function saveDeals(deals) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
+  // Dispatch event so dashboard can update stats
+  window.dispatchEvent(new Event('meridian_deals_updated'));
+}
+
+function fmtPrice(n) {
+  if (!n) return '—';
+  return '$' + Number(n).toLocaleString('en-US');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderDeals() {
+  const { deals, isDemo } = loadDeals();
+  document.getElementById('demo-banner').style.display = isDemo ? 'block' : 'none';
+
+  const list = document.getElementById('deal-list');
+
+  if (!deals.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <p class="empty-title">NO ACTIVE DEALS</p>
+        <p class="empty-sub">Add your first transaction to start tracking your pipeline.</p>
+        <button class="btn-add-deal" onclick="openModal()">+ ADD YOUR FIRST DEAL</button>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = deals.map(deal => {
+    const outstanding = (deal.outstanding || []).map(item => {
+      const [text, flag] = item.split('|');
+      return `<div class="outstanding-item${flag === 'urgent' ? ' urgent' : ''}">${text}</div>`;
+    }).join('') || '<div class="outstanding-item" style="color:var(--muted);font-style:italic">None noted</div>';
+
+    return `
+    <div class="deal-row" id="${deal.id}" onclick="toggleDeal('${deal.id}')">
+      <div class="deal-summary">
+        <div>
+          <div class="deal-address">${deal.address}</div>
+          <div class="deal-client">${deal.client || ''}</div>
+        </div>
+        <span class="deal-stage stage-${deal.stage}">${STAGE_LABELS[deal.stage] || deal.stage.toUpperCase()}</span>
+        <span class="deal-price">${fmtPrice(deal.price)}</span>
+        <span class="deal-chevron">›</span>
+      </div>
+      <div class="deal-detail">
+        <div class="detail-grid">
+          <div class="detail-block">
+            <span class="detail-label">Closing Date</span>
+            <span class="detail-value">${fmtDate(deal.closingDate)}</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Inspection Deadline</span>
+            <span class="detail-value">${fmtDate(deal.inspectionDate)}</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Outstanding Items</span>
+            <div class="outstanding-list">${outstanding}</div>
+          </div>
+        </div>
+        ${deal.nextAction ? `
+        <div class="next-action-block">
+          <span class="next-action-prefix">NEXT ACTION</span>
+          <span class="next-action-text">${deal.nextAction}</span>
+        </div>` : ''}
+        <div class="deal-actions" onclick="event.stopPropagation()">
+          <button class="btn-deal-action" onclick="editDeal('${deal.id}')">EDIT</button>
+          <button class="btn-deal-action danger" onclick="deleteDeal('${deal.id}')">DELETE</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDeal(id) {
+  const row = document.getElementById(id);
+  const isOpen = row.classList.contains('open');
+  document.querySelectorAll('.deal-row.open').forEach(r => r.classList.remove('open'));
+  if (!isOpen) row.classList.add('open');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(deal = null) {
+  document.getElementById('modal-title').textContent = deal ? 'EDIT DEAL' : 'ADD DEAL';
+  document.getElementById('edit-id').value       = deal?.id || '';
+  document.getElementById('f-address').value     = deal?.address || '';
+  document.getElementById('f-client').value      = deal?.client || '';
+  document.getElementById('f-side').value        = deal?.side || 'buyer';
+  document.getElementById('f-stage').value       = deal?.stage || 'offer';
+  document.getElementById('f-price').value       = deal?.price || '';
+  document.getElementById('f-closing').value     = deal?.closingDate || '';
+  document.getElementById('f-inspection').value  = deal?.inspectionDate || '';
+  document.getElementById('f-nextaction').value  = deal?.nextAction || '';
+  document.getElementById('f-outstanding').value = (deal?.outstanding || []).map(i => i.split('|')[0]).join('\n');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function saveDeal() {
+  const address = document.getElementById('f-address').value.trim();
+  if (!address) { alert('Property address is required.'); return; }
+
+  const outstandingRaw = document.getElementById('f-outstanding').value.trim();
+  const outstanding = outstandingRaw ? outstandingRaw.split('\n').filter(l => l.trim()).map(l => l.trim()) : [];
+
+  const deal = {
+    id:             document.getElementById('edit-id').value || 'deal-' + Date.now(),
+    address,
+    client:         document.getElementById('f-client').value.trim(),
+    side:           document.getElementById('f-side').value,
+    stage:          document.getElementById('f-stage').value,
+    price:          parseFloat(document.getElementById('f-price').value) || 0,
+    closingDate:    document.getElementById('f-closing').value,
+    inspectionDate: document.getElementById('f-inspection').value,
+    nextAction:     document.getElementById('f-nextaction').value.trim(),
+    outstanding,
+    created_at:     new Date().toISOString(),
+  };
+
+  // Get current real deals (never mix with demo)
+  let deals = [];
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) deals = JSON.parse(raw) || []; } catch {}
+
+  const editId = document.getElementById('edit-id').value;
+  if (editId) {
+    deals = deals.map(d => d.id === editId ? deal : d);
+  } else {
+    deals.push(deal);
+  }
+
+  saveDeals(deals);
+  closeModal();
+  renderDeals();
+}
+
+function editDeal(id) {
+  const { deals } = loadDeals();
+  const deal = deals.find(d => d.id === id);
+  if (deal) openModal(deal);
+}
+
+function deleteDeal(id) {
+  if (!confirm('Delete this deal? This cannot be undone.')) return;
+  let deals = [];
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) deals = JSON.parse(raw) || []; } catch {}
+  deals = deals.filter(d => d.id !== id);
+  saveDeals(deals);
+  renderDeals();
+}
+
+// Init
+renderDeals();
+</script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:#060606; --off-black:#0e0e0e; --surface:#111111; --surface2:#161616;
+    --border:#1c1c1c; --border-light:#242424;
+    --white:#f8f8f6; --off-white:#e8e8e4; --muted:#4a4a4a; --dim:#222222;
+    --green:#60a060; --green-bg:rgba(96,160,96,0.08);
+    --yellow:#a0a060; --yellow-bg:rgba(160,160,96,0.1);
+    --red:#c06060; --red-bg:rgba(192,96,96,0.08);
+    --blue:#6090c0; --blue-bg:rgba(96,144,192,0.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--black); color:var(--off-white); font-family:'DM Sans',sans-serif; font-weight:300; min-height:100vh; }
+  body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; }
+
+  /* ── LOCK SCREEN ─────────────────────────────────────────────── */
+  #lock-screen {
+    position:fixed; inset:0; background:var(--black); z-index:500;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px;
+  }
+  .lock-logo { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; letter-spacing:0.3em; color:var(--white); margin-bottom:48px; }
+  .lock-title { font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:300; color:var(--white); margin-bottom:8px; }
+  .lock-sub { font-size:13px; color:var(--muted); margin-bottom:40px; }
+  .lock-field { display:flex; flex-direction:column; gap:8px; width:100%; max-width:320px; margin-bottom:16px; }
+  .lock-label { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--muted); }
+  .lock-input {
+    background:transparent; border:none; border-bottom:1px solid var(--border);
+    color:var(--off-white); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:300;
+    padding:10px 0; outline:none; width:100%; transition:border-color 0.15s;
+  }
+  .lock-input:focus { border-color:var(--off-white); }
+  .lock-btn {
+    background:var(--off-white); color:var(--black); border:none; width:100%; max-width:320px;
+    padding:14px; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.2em;
+    cursor:pointer; transition:opacity 0.2s;
+  }
+  .lock-btn:hover { opacity:0.88; }
+  .lock-error { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.15em; color:var(--red); margin-top:12px; display:none; }
+
+  /* ── NAV ────────────────────────────────────────────────────── */
+  nav {
+    position:sticky; top:0; z-index:100; padding:18px 48px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--border); background:rgba(6,6,6,0.96); backdrop-filter:blur(20px);
+  }
+  .nav-left { display:flex; align-items:center; gap:20px; }
+  .nav-logo { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; letter-spacing:0.3em; color:var(--white); }
+  .admin-badge { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.2em; color:var(--red); border:1px solid rgba(192,96,96,0.3); padding:3px 8px; }
+  .nav-right { display:flex; align-items:center; gap:20px; }
+  .nav-time { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); }
+  .btn-lock { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.15em; color:var(--muted); background:none; border:1px solid var(--border); padding:8px 16px; cursor:pointer; transition:all 0.15s; }
+  .btn-lock:hover { color:var(--off-white); border-color:var(--border-light); }
+
+  /* ── MAIN ───────────────────────────────────────────────────── */
+  .main { max-width:1400px; margin:0 auto; padding:40px 48px 80px; }
+
+  /* ── KPI ROW ────────────────────────────────────────────────── */
+  .kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--border); margin-bottom:40px; border:1px solid var(--border); }
+  .kpi-card { background:var(--off-black); padding:24px; }
+  .kpi-label { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.2em; color:var(--muted); margin-bottom:12px; }
+  .kpi-value { font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:300; color:var(--white); }
+  .kpi-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+  .kpi-delta { display:inline-block; font-family:'Space Mono',monospace; font-size:9px; margin-top:6px; }
+  .delta-up { color:var(--green); }
+  .delta-dn { color:var(--red); }
+
+  /* ── SECTION HEADER ─────────────────────────────────────────── */
+  .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .section-label { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.2em; color:var(--muted); }
+  .section-actions { display:flex; gap:8px; }
+  .btn-sm { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.1em; padding:6px 14px; background:none; border:1px solid var(--border-light); color:var(--muted); cursor:pointer; transition:all 0.15s; }
+  .btn-sm:hover { color:var(--off-white); border-color:var(--off-white); }
+  .btn-sm.active { color:var(--off-white); border-color:var(--off-white); }
+
+  /* ── AGENT TABLE ────────────────────────────────────────────── */
+  .table-wrap { border:1px solid var(--border); margin-bottom:40px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:900px; }
+  thead tr { border-bottom:1px solid var(--border); }
+  th { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.15em; color:var(--muted); padding:12px 16px; text-align:left; font-weight:400; white-space:nowrap; }
+  td { font-size:12px; color:var(--muted); padding:14px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,0.015); }
+  .agent-name { color:var(--off-white); font-size:13px; }
+  .agent-email { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  /* TIER BADGE */
+  .tier { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.12em; padding:3px 8px; }
+  .tier.pro { background:rgba(96,144,192,0.12); color:var(--blue); }
+  .tier.core { background:rgba(160,160,96,0.1); color:var(--yellow); }
+  .tier.trial { background:rgba(96,160,96,0.1); color:var(--green); }
+  .tier.churned { background:rgba(192,96,96,0.1); color:var(--red); }
+
+  /* STATUS DOT */
+  .status-dot { width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:8px; }
+  .dot-active { background:var(--green); }
+  .dot-trial { background:var(--yellow); }
+  .dot-at-risk { background:var(--red); }
+  .dot-churned { background:var(--muted); }
+
+  /* SCORE BAR */
+  .score-bar-wrap { display:flex; align-items:center; gap:8px; }
+  .score-bar-bg { flex:1; height:3px; background:var(--dim); max-width:80px; }
+  .score-bar-fill { height:3px; background:var(--green); }
+  .score-num { font-family:'Space Mono',monospace; font-size:10px; color:var(--off-white); min-width:28px; }
+
+  /* TOKEN BAR */
+  .token-bar-bg { height:2px; background:var(--dim); max-width:80px; margin-top:4px; }
+  .token-bar-fill { height:2px; }
+  .token-pct { font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); }
+  .bar-normal { background:var(--blue); }
+  .bar-high { background:var(--yellow); }
+  .bar-danger { background:var(--red); }
+
+  /* CHURN FLAGS */
+  .churn-flag { display:inline-block; font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.08em; padding:2px 6px; margin:1px; }
+  .flag-warn { background:var(--yellow-bg); color:var(--yellow); }
+  .flag-risk { background:var(--red-bg); color:var(--red); }
+  .flag-ok   { background:var(--green-bg); color:var(--green); }
+
+  .btn-action { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:0.1em; padding:5px 10px; background:none; border:1px solid var(--border); color:var(--muted); cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+  .btn-action:hover { color:var(--off-white); border-color:var(--border-light); }
+
+  /* ── LOG / ACTIVITY ─────────────────────────────────────────── */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:40px; }
+  .panel { border:1px solid var(--border); }
+  .panel-header { padding:16px 20px; border-bottom:1px solid var(--border); font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--muted); }
+  .log-row { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start; }
+  .log-row:last-child { border-bottom:none; }
+  .log-time { font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); white-space:nowrap; padding-top:2px; flex-shrink:0; }
+  .log-text { font-size:12px; color:var(--muted); line-height:1.5; }
+  .log-text strong { color:var(--off-white); font-weight:400; }
+
+  /* MRR CHART BARS */
+  .mrr-bars { padding:20px; display:flex; align-items:flex-end; gap:6px; height:120px; }
+  .mrr-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .mrr-bar { width:100%; background:var(--blue); transition:height 0.3s; min-width:8px; }
+  .mrr-bar.current { background:var(--off-white); }
+  .mrr-label { font-family:'Space Mono',monospace; font-size:7px; color:var(--muted); }
+  .mrr-val { font-family:'Space Mono',monospace; font-size:7px; color:var(--muted); }
+
+  /* CHURN RISK PANEL */
+  .risk-row { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .risk-row:last-child { border-bottom:none; }
+  .risk-name { font-size:13px; color:var(--off-white); }
+  .risk-detail { font-size:11px; color:var(--muted); margin-top:2px; }
+  .risk-score { font-family:'Space Mono',monospace; font-size:10px; }
+  .risk-high { color:var(--red); }
+  .risk-med { color:var(--yellow); }
+
+  @media (max-width:900px) {
+    nav { padding:16px 24px; }
+    .main { padding:24px 20px 60px; }
+    .kpi-row { grid-template-columns:repeat(2,1fr); }
+    .two-col { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen">
+  <p class="lock-logo">MERIDIAN</p>
+  <h2 class="lock-title">Admin Access</h2>
+  <p class="lock-sub">This area is restricted to authorized personnel only.</p>
+  <div class="lock-field">
+    <label class="lock-label" for="lock-pass">PASSWORD</label>
+    <input class="lock-input" type="password" id="lock-pass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')tryUnlock()">
+  </div>
+  <button class="lock-btn" onclick="tryUnlock()">ENTER →</button>
+  <p class="lock-error" id="lock-error">Incorrect password. Try again.</p>
+</div>
+
+<!-- ADMIN CONTENT (hidden until unlocked) -->
+<div id="admin-content" style="display:none;">
+
+  <nav>
+    <div class="nav-left">
+      <span class="nav-logo">MERIDIAN</span>
+      <span class="admin-badge">ADMIN</span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-time" id="admin-time">—</span>
+      <button class="btn-lock" onclick="lockAdmin()">LOCK →</button>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <p class="kpi-label">TOTAL AGENTS</p>
+        <p class="kpi-value">24</p>
+        <p class="kpi-sub">12 Pro · 9 Core · 3 Trial</p>
+        <span class="kpi-delta delta-up">↑ +3 this month</span>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">MRR</p>
+        <p class="kpi-value">$2,904</p>
+        <p class="kpi-sub">Billed monthly</p>
+        <span class="kpi-delta delta-up">↑ +$447 vs last mo</span>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">ARR (PROJ.)</p>
+        <p class="kpi-value">$34,848</p>
+        <p class="kpi-sub">At current MRR</p>
+        <span class="kpi-delta delta-up">↑ on track</span>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">CHURN RISK</p>
+        <p class="kpi-value">3</p>
+        <p class="kpi-sub">Agents flagged</p>
+        <span class="kpi-delta delta-dn">↓ action needed</span>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">AVG MERIDIAN SCORE</p>
+        <p class="kpi-value">71</p>
+        <p class="kpi-sub">Across all active agents</p>
+        <span class="kpi-delta delta-up">↑ +4 pts vs last mo</span>
+      </div>
+    </div>
+
+    <!-- AGENT TABLE -->
+    <div class="section-header">
+      <p class="section-label">ALL AGENTS</p>
+      <div class="section-actions">
+        <button class="btn-sm active" onclick="filterAgents('all',this)">ALL</button>
+        <button class="btn-sm" onclick="filterAgents('pro',this)">PRO</button>
+        <button class="btn-sm" onclick="filterAgents('core',this)">CORE</button>
+        <button class="btn-sm" onclick="filterAgents('trial',this)">TRIAL</button>
+        <button class="btn-sm" onclick="filterAgents('at-risk',this)">AT RISK</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="agent-table">
+        <thead>
+          <tr>
+            <th>AGENT</th>
+            <th>TIER</th>
+            <th>STATUS</th>
+            <th>LAST LOGIN</th>
+            <th>MERIDIAN SCORE</th>
+            <th>TOKEN USAGE</th>
+            <th>MRR</th>
+            <th>CHURN FLAGS</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="agent-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- BOTTOM TWO-COL -->
+    <div class="two-col">
+
+      <!-- MRR TREND -->
+      <div class="panel">
+        <div class="panel-header">MRR TREND — LAST 6 MONTHS</div>
+        <div class="mrr-bars" id="mrr-bars"></div>
+      </div>
+
+      <!-- CHURN RISK -->
+      <div class="panel">
+        <div class="panel-header">CHURN RISK WATCH</div>
+        <div id="churn-list"></div>
+      </div>
+
+    </div>
+
+    <!-- ACTIVITY LOG -->
+    <div class="panel">
+      <div class="panel-header">RECENT ACTIVITY LOG</div>
+      <div id="activity-log"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── PASSWORD ──────────────────────────────────────────────────────
+const ADMIN_PASS = 'meridian-admin-2026';
+
+function tryUnlock() {
+  const val = document.getElementById('lock-pass').value;
+  if (val === ADMIN_PASS) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    initAdmin();
+    try { sessionStorage.setItem('meridian_admin_auth', '1'); } catch {}
+  } else {
+    document.getElementById('lock-error').style.display = 'block';
+    document.getElementById('lock-pass').value = '';
+    document.getElementById('lock-pass').focus();
+  }
+}
+
+function lockAdmin() {
+  try { sessionStorage.removeItem('meridian_admin_auth'); } catch {}
+  document.getElementById('admin-content').style.display = 'none';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('lock-pass').value = '';
+}
+
+// Auto-unlock if session still valid
+if (sessionStorage.getItem('meridian_admin_auth') === '1') {
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('admin-content').style.display = 'block';
+}
+
+// ── DATA ──────────────────────────────────────────────────────────
+const AGENTS = [
+  { id:1, name:'Jordan Ellis',    email:'jordan@compass.com',     brokerage:'Compass',       tier:'pro',   status:'active',  lastLogin:'2 hrs ago',  score:88, tokenPct:42, mrr:149, flags:[]                             },
+  { id:2, name:'Sarah Okafor',    email:'sarah@coldwellbanker.com',brokerage:'Coldwell Banker',tier:'pro',  status:'active',  lastLogin:'Today',      score:91, tokenPct:67, mrr:149, flags:[]                             },
+  { id:3, name:'Marcus Torres',   email:'marcus@remax.com',       brokerage:'RE/MAX',        tier:'core',  status:'active',  lastLogin:'Yesterday',  score:74, tokenPct:88, mrr:79,  flags:['HIGH_USAGE']                  },
+  { id:4, name:'Priya Nair',      email:'priya@kw.com',           brokerage:'KW',            tier:'trial', status:'trial',   lastLogin:'3 days ago', score:45, tokenPct:12, mrr:0,   flags:['LOW_ENGAGEMENT']              },
+  { id:5, name:'Derek Holt',      email:'derek@ezio.com',         brokerage:'Ezio Realty',   tier:'pro',   status:'active',  lastLogin:'5 hrs ago',  score:82, tokenPct:55, mrr:149, flags:[]                             },
+  { id:6, name:'Amara Johnson',   email:'amara@bhhs.com',         brokerage:'BHHS',          tier:'core',  status:'at-risk', lastLogin:'11 days ago',score:38, tokenPct:4,  mrr:79,  flags:['LOW_ENGAGEMENT','NO_LOGIN']   },
+  { id:7, name:'Chen Wei',        email:'chen@sothebys.com',      brokerage:"Sotheby's",     tier:'pro',   status:'active',  lastLogin:'Today',      score:96, tokenPct:71, mrr:149, flags:[]                             },
+  { id:8, name:'Tanya Brooks',    email:'tanya@exitrealty.com',   brokerage:'Exit Realty',   tier:'core',  status:'at-risk', lastLogin:'14 days ago',score:29, tokenPct:2,  mrr:79,  flags:['NO_LOGIN','CANCEL_RISK']      },
+  { id:9, name:'Raj Patel',       email:'raj@century21.com',      brokerage:'Century 21',    tier:'pro',   status:'active',  lastLogin:'Yesterday',  score:79, tokenPct:48, mrr:149, flags:[]                             },
+  { id:10,name:'Lucia Fernandez', email:'lucia@redfin.com',       brokerage:'Redfin',        tier:'trial', status:'trial',   lastLogin:'Today',      score:61, tokenPct:22, mrr:0,   flags:[]                             },
+  { id:11,name:'Brandon Kim',     email:'brandon@compass.com',    brokerage:'Compass',       tier:'core',  status:'active',  lastLogin:'3 hrs ago',  score:77, tokenPct:33, mrr:79,  flags:[]                             },
+  { id:12,name:'Fatima Al-Amin',  email:'fatima@kw.com',          brokerage:'KW',            tier:'pro',   status:'at-risk', lastLogin:'9 days ago', score:41, tokenPct:8,  mrr:149, flags:['LOW_ENGAGEMENT','CANCEL_RISK'] },
+];
+
+const MRR_HISTORY = [
+  { month:'OCT', val:1580 }, { month:'NOV', val:1900 }, { month:'DEC', val:2158 },
+  { month:'JAN', val:2457 }, { month:'FEB', val:2679 }, { month:'MAR', val:2904, current:true },
+];
+
+const ACTIVITY = [
+  { time:'08:14 AM', text:'<strong>Jordan Ellis</strong> ran Morning Briefing — 3 P1 items surfaced' },
+  { time:'07:59 AM', text:'<strong>Lucia Fernandez</strong> signed up (trial · Core plan)' },
+  { time:'Yesterday',text:'<strong>Tanya Brooks</strong> has not logged in for 14 days — churn flag raised' },
+  { time:'Yesterday',text:'<strong>Chen Wei</strong> added 2 new transactions · Meridian Score updated to 96' },
+  { time:'Mar 8',   text:'<strong>Fatima Al-Amin</strong> opened Meridian but did not complete onboarding — risk flag' },
+  { time:'Mar 7',   text:'<strong>Marcus Torres</strong> at 88% token quota — auto-alert queued for quota increase' },
+  { time:'Mar 6',   text:'<strong>Priya Nair</strong> joined trial · no profile completed yet' },
+  { time:'Mar 5',   text:'Monthly billing ran — 18 successful · 0 failed · $2,904 collected' },
+];
+
+// ── RENDER ────────────────────────────────────────────────────────
+let currentFilter = 'all';
+
+function renderAgents(filter) {
+  currentFilter = filter;
+  const filtered = filter === 'all' ? AGENTS
+    : filter === 'at-risk' ? AGENTS.filter(a => a.status === 'at-risk')
+    : AGENTS.filter(a => a.tier === filter);
+
+  document.getElementById('agent-tbody').innerHTML = filtered.map(a => {
+    const tierClass = a.tier;
+    const statusDot = { active:'dot-active', trial:'dot-trial', 'at-risk':'dot-at-risk', churned:'dot-churned' }[a.status] || 'dot-churned';
+    const barClass = a.tokenPct < 60 ? 'bar-normal' : a.tokenPct < 85 ? 'bar-high' : 'bar-danger';
+    const flags = a.flags.map(f => {
+      const cls = f.includes('CANCEL') || f.includes('NO_LOGIN') ? 'flag-risk' : 'flag-warn';
+      return `<span class="churn-flag ${cls}">${f.replace(/_/g,' ')}</span>`;
+    }).join('') || '<span class="churn-flag flag-ok">HEALTHY</span>';
+
+    return `<tr data-tier="${a.tier}" data-status="${a.status}">
+      <td>
+        <div class="agent-name">${a.name}</div>
+        <div class="agent-email">${a.email} · ${a.brokerage}</div>
+      </td>
+      <td><span class="tier ${a.tier}">${a.tier.toUpperCase()}</span></td>
+      <td><span class="status-dot ${statusDot}"></span>${a.status.toUpperCase()}</td>
+      <td>${a.lastLogin}</td>
+      <td>
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:${a.score}%"></div></div>
+          <span class="score-num">${a.score}</span>
+        </div>
+      </td>
+      <td>
+        <span class="token-pct">${a.tokenPct}%</span>
+        <div class="token-bar-bg"><div class="token-bar-fill ${barClass}" style="width:${a.tokenPct}%"></div></div>
+      </td>
+      <td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--off-white);">${a.mrr === 0 ? '—' : '$'+a.mrr}</td>
+      <td>${flags}</td>
+      <td>
+        <button class="btn-action" onclick="agentAction(${a.id})">VIEW →</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAgents(filter, btn) {
+  document.querySelectorAll('.btn-sm').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAgents(filter);
+}
+
+function agentAction(id) {
+  const a = AGENTS.find(x => x.id === id);
+  if (!a) return;
+  const info = [
+    `Agent: ${a.name}`,
+    `Email: ${a.email}`,
+    `Brokerage: ${a.brokerage}`,
+    `Tier: ${a.tier.toUpperCase()}`,
+    `Status: ${a.status}`,
+    `Meridian Score: ${a.score}/100`,
+    `Token Usage: ${a.tokenPct}%`,
+    `MRR: ${a.mrr === 0 ? 'Trial (no charge)' : '$'+a.mrr+'/mo'}`,
+    `Churn Flags: ${a.flags.length ? a.flags.join(', ') : 'None'}`,
+  ].join('\n');
+  alert(info);
+}
+
+function renderMRR() {
+  const max = Math.max(...MRR_HISTORY.map(m => m.val));
+  document.getElementById('mrr-bars').innerHTML = MRR_HISTORY.map(m => `
+    <div class="mrr-bar-wrap">
+      <span class="mrr-val" style="font-size:7px;color:var(--muted);">$${(m.val/1000).toFixed(1)}k</span>
+      <div class="mrr-bar${m.current?' current':''}" style="height:${Math.round((m.val/max)*80)}px"></div>
+      <span class="mrr-label">${m.month}</span>
+    </div>
+  `).join('');
+}
+
+function renderChurnRisk() {
+  const risky = AGENTS.filter(a => a.flags.length > 0 || a.status === 'at-risk')
+    .sort((a,b) => a.score - b.score).slice(0,5);
+  document.getElementById('churn-list').innerHTML = risky.map(a => `
+    <div class="risk-row">
+      <div>
+        <div class="risk-name">${a.name}</div>
+        <div class="risk-detail">${a.tier.toUpperCase()} · Last login: ${a.lastLogin}</div>
+      </div>
+      <span class="risk-score ${a.score < 40 ? 'risk-high' : 'risk-med'}">
+        Score ${a.score}
+      </span>
+    </div>
+  `).join('');
+}
+
+function renderActivity() {
+  document.getElementById('activity-log').innerHTML = ACTIVITY.map(e => `
+    <div class="log-row">
+      <span class="log-time">${e.time}</span>
+      <span class="log-text">${e.text}</span>
+    </div>
+  `).join('');
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('admin-time').textContent =
+    now.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' · ' +
+    now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+function initAdmin() {
+  renderAgents('all');
+  renderMRR();
+  renderChurnRisk();
+  renderActivity();
+  updateClock();
+  setInterval(updateClock, 30000);
+}
+
+// Auto-unlock check on load
+window.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('meridian_admin_auth') === '1') {
+    initAdmin();
+  } else {
+    setTimeout(() => document.getElementById('lock-pass').focus(), 100);
+  }
+});
+</script>
+</body>
+</html>

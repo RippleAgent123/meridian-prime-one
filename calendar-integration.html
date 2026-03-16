@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Smart Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0A0A0A; --bg-card:#1A1A1A; --bg-surface:#141414; --bg-hover:#1F1F1F;
+    --border:#2A2A2A; --border-light:#333333;
+    --text-primary:#FFFFFF; --text-secondary:rgba(255,255,255,0.6); --text-tertiary:rgba(255,255,255,0.3);
+    --urgent:#FF4444; --urgent-bg:rgba(255,68,68,0.12);
+    --active:#00C48C; --active-bg:rgba(0,196,140,0.12);
+    --pending:#FFB800; --pending-bg:rgba(255,184,0,0.12);
+    --info:#4A9EFF; --info-bg:rgba(74,158,255,0.12);
+    --neutral:rgba(255,255,255,0.2); --neutral-bg:rgba(255,255,255,0.05);
+    /* event type colors */
+    --closing:#C86060;     --closing-bg:rgba(200,96,96,0.12);
+    --inspection:#C07840;  --inspection-bg:rgba(192,120,64,0.12);
+    --followup:#C8A030;    --followup-bg:rgba(200,160,48,0.12);
+    --inbiz:#6090B8;       --inbiz-bg:rgba(96,144,184,0.12);
+    --onbiz:#60A878;       --onbiz-bg:rgba(96,168,120,0.12);
+    --personal:rgba(255,255,255,0.2); --personal-bg:rgba(255,255,255,0.05);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text-primary); font-family:'Inter',sans-serif; font-weight:300; font-size:14px; min-height:100vh; }
+  body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; }
+
+  nav { position:fixed; top:0; left:0; right:0; z-index:100; padding:20px 48px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); background:rgba(10,10,10,0.95); backdrop-filter:blur(20px); }
+  .nav-logo { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; letter-spacing:0.3em; color:var(--text-primary); }
+  .nav-back { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; color:var(--text-secondary); text-decoration:none; transition:color 0.15s; display:flex; align-items:center; gap:8px; }
+  .nav-back:hover { color:var(--text-primary); }
+  .nav-tag { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em; color:var(--text-tertiary); }
+
+  .page-wrapper { padding:100px 48px 80px; max-width:900px; margin:0 auto; }
+  .page-header { margin-bottom:40px; }
+  .page-eyebrow { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.3em; color:var(--text-tertiary); margin-bottom:12px; }
+  .page-title { font-family:'Inter',sans-serif; font-size:38px; font-weight:300; color:var(--text-primary); letter-spacing:-0.02em; margin-bottom:8px; }
+  .page-sub { font-size:13px; color:var(--text-secondary); line-height:1.7; max-width:560px; }
+
+  /* AI SUGGESTION STRIP */
+  .ai-strip { background:var(--bg-card); border:1px solid var(--border-light); border-left:3px solid var(--active); padding:16px 20px; margin-bottom:32px; display:flex; align-items:flex-start; gap:12px; }
+  .ai-strip-icon { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.15em; color:var(--active); flex-shrink:0; padding-top:2px; }
+  .ai-strip-text { font-size:13px; color:var(--text-secondary); line-height:1.6; }
+  .ai-strip-text strong { color:var(--text-primary); font-weight:500; }
+
+  /* CONNECT GRID */
+  .connect-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); margin-bottom:40px; }
+  .connect-card { background:var(--bg-card); padding:24px 28px; }
+  .provider-name { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.15em; color:var(--text-primary); margin-bottom:6px; }
+  .provider-desc { font-size:12px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px; }
+  .btn-connect { display:inline-block; background:none; border:1px solid var(--border-light); color:var(--text-secondary); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em; padding:10px 20px; cursor:pointer; transition:all 0.15s; }
+  .btn-connect:hover { border-color:var(--text-primary); color:var(--text-primary); }
+  .btn-connect.connected { border-color:rgba(0,196,140,0.4); color:var(--active); cursor:default; }
+
+  /* COLOR LEGEND */
+  .legend { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); margin-bottom:32px; }
+  .legend-item { background:var(--bg-card); padding:14px 16px; }
+  .legend-dot { width:8px; height:8px; border-radius:50%; margin-bottom:8px; }
+  .legend-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.1em; color:var(--text-secondary); margin-bottom:2px; }
+  .legend-desc { font-size:11px; color:var(--text-tertiary); }
+
+  /* BUSINESS TYPE TABS */
+  .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .section-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; color:var(--text-tertiary); }
+  .biz-tabs { display:flex; gap:1px; background:var(--border); }
+  .biz-tab { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.15em; padding:7px 14px; background:var(--bg-card); color:var(--text-tertiary); cursor:pointer; border:none; transition:all 0.15s; }
+  .biz-tab.active { background:var(--bg-hover); color:var(--text-primary); }
+  .biz-tab:hover:not(.active) { color:var(--text-secondary); }
+
+  /* EVENTS LIST */
+  .events-list { border:1px solid var(--border); margin-bottom:32px; }
+  .event-row { display:grid; grid-template-columns:4px 1fr auto; align-items:stretch; border-bottom:1px solid var(--border); transition:background 0.15s; }
+  .event-row:last-child { border-bottom:none; }
+  .event-row:hover { background:var(--bg-hover); }
+  .event-stripe { min-height:52px; }
+  .event-body { padding:14px 16px; }
+  .event-header { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .event-title { font-size:13px; color:var(--text-primary); font-weight:400; }
+  .event-badges { display:flex; gap:6px; }
+  .badge { font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.1em; padding:3px 7px; border-radius:0; }
+  .badge-in  { background:var(--inbiz-bg); color:var(--inbiz); border:1px solid rgba(96,144,184,0.3); }
+  .badge-on  { background:var(--onbiz-bg); color:var(--onbiz); border:1px solid rgba(96,168,120,0.3); }
+  .badge-unmovable { background:rgba(255,68,68,0.1); color:var(--urgent); border:1px solid rgba(255,68,68,0.2); }
+  .event-meta { font-size:11px; color:var(--text-tertiary); }
+  .event-action { padding:14px 16px; display:flex; align-items:center; }
+  .btn-add { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.1em; padding:7px 14px; background:none; border:1px solid var(--border-light); color:var(--text-secondary); cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+  .btn-add:hover { border-color:var(--text-primary); color:var(--text-primary); }
+  .btn-add.added { border-color:rgba(0,196,140,0.4); color:var(--active); cursor:default; }
+
+  /* SYNC BUTTON */
+  .sync-row { display:flex; align-items:center; gap:16px; margin-bottom:40px; }
+  .btn-sync-all { background:var(--text-primary); color:#0A0A0A; border:none; padding:14px 32px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.2em; cursor:pointer; transition:opacity 0.2s; }
+  .btn-sync-all:hover { opacity:0.85; }
+  .sync-count { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-tertiary); }
+
+  /* OAUTH NOTE */
+  .oauth-note { padding:20px 24px; border:1px solid var(--border); font-size:12px; color:var(--text-tertiary); line-height:1.7; }
+  .oauth-note strong { color:var(--text-secondary); }
+
+  @media (max-width:640px) {
+    nav { padding:18px 24px; }
+    .page-wrapper { padding:88px 24px 60px; }
+    .connect-grid { grid-template-columns:1fr; }
+    .legend { grid-template-columns:1fr 1fr; }
+    .section-header { flex-direction:column; align-items:flex-start; gap:12px; }
+  }
+</style>
+    <script src="nav.js"></script>
+</head>
+<body>
+<nav style="display:none">
+  <span class="nav-logo">MERIDIAN</span>
+  <a href="index.html" class="nav-back">← DASHBOARD</a>
+  <span class="nav-tag">SMART CALENDAR</span>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <p class="page-eyebrow">Pro Feature</p>
+    <h1 class="page-title">Smart Calendar</h1>
+    <p class="page-sub">Meridian reads your transaction due dates and auto-creates calendar events. Color-coded by type. Tagged IN or ON business. Zero manual entry.</p>
+  </div>
+
+  <!-- AI SUGGESTION STRIP -->
+  <div class="ai-strip" id="ai-strip">
+    <span class="ai-strip-icon">AI</span>
+    <p class="ai-strip-text">
+      <strong>You have 3 follow-ups due this week and no showings on Thursday</strong> — good day to batch them. Consider blocking 10 AM–12 PM for client calls. You also have back-to-back closings March 21 and April 4; pre-schedule lender check-ins 48 hours before each.
+    </p>
+  </div>
+
+  <!-- CONNECT PROVIDERS -->
+  <div class="connect-grid">
+    <div class="connect-card">
+      <p class="provider-name">GOOGLE CALENDAR</p>
+      <p class="provider-desc">Connects via Google OAuth 2.0. Requires calendar.events scope. Creates a dedicated "Meridian" calendar in your account.</p>
+      <button class="btn-connect" id="btn-gcal" onclick="connectCalendar('gcal')">CONNECT GOOGLE</button>
+    </div>
+    <div class="connect-card">
+      <p class="provider-name">OUTLOOK CALENDAR</p>
+      <p class="provider-desc">Connects via Microsoft OAuth 2.0. Requires Calendars.ReadWrite. Creates events in your default Outlook calendar.</p>
+      <button class="btn-connect" id="btn-outlook" onclick="connectCalendar('outlook')">CONNECT OUTLOOK</button>
+    </div>
+  </div>
+
+  <!-- COLOR LEGEND -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--closing);"></div>
+      <p class="legend-label">CLOSING DATE</p>
+      <p class="legend-desc">Unmovable · highest priority</p>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--inspection);"></div>
+      <p class="legend-label">INSPECTION / DEADLINE</p>
+      <p class="legend-desc">High priority · legal deadline</p>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--followup);"></div>
+      <p class="legend-label">FOLLOW-UP</p>
+      <p class="legend-desc">Flexible · reschedulable</p>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--personal);"></div>
+      <p class="legend-label">PERSONAL / OTHER</p>
+      <p class="legend-desc">Low priority · gray</p>
+    </div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="section-header">
+    <p class="section-label">EVENTS FROM ACTIVE TRANSACTIONS</p>
+    <div class="biz-tabs">
+      <button class="biz-tab active" onclick="filterEvents('all', this)">ALL</button>
+      <button class="biz-tab" onclick="filterEvents('in', this)">IN BUSINESS</button>
+      <button class="biz-tab" onclick="filterEvents('on', this)">ON BUSINESS</button>
+    </div>
+  </div>
+
+  <div class="events-list" id="events-list"></div>
+
+  <div class="sync-row">
+    <button class="btn-sync-all" onclick="syncAll()">SYNC ALL TO CALENDAR</button>
+    <span class="sync-count" id="sync-count">9 events ready</span>
+  </div>
+
+  <div class="oauth-note">
+    <strong>Setup:</strong> Register OAuth apps at <strong>console.cloud.google.com</strong> (Google) and <strong>portal.azure.com</strong> (Microsoft). Add <strong>GOOGLE_CLIENT_ID</strong>, <strong>GOOGLE_CLIENT_SECRET</strong>, <strong>MICROSOFT_CLIENT_ID</strong>, <strong>MICROSOFT_CLIENT_SECRET</strong>, <strong>MICROSOFT_TENANT_ID</strong> to Vercel env vars. Redirect URIs: <strong>/api/auth/google-callback</strong> and <strong>/api/auth/microsoft-callback</strong>.
+  </div>
+</div>
+
+<script>
+// ── HELPERS ────────────────────────────────────────────────────
+const STORAGE_KEY = 'meridian_transactions';
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+}
+
+function getDaysUntil(iso) {
+  if (!iso) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [y, m, d] = iso.split('-').map(Number);
+  return Math.round((new Date(y, m - 1, d) - today) / 86400000);
+}
+
+function daysTag(iso) {
+  const n = getDaysUntil(iso);
+  if (n === null) return '';
+  if (n === 0) return ' · TODAY';
+  if (n > 0) return ` · ${n}d out`;
+  return ` · ${Math.abs(n)}d ago`;
+}
+
+// ── BUILD EVENTS FROM REAL DEALS ───────────────────────────────
+function buildEventsFromDeals(deals) {
+  const evs = [];
+  deals.forEach(deal => {
+    const addr = deal.address ? deal.address.split(',')[0] : 'Unknown';
+    const client = deal.client ? ` (${deal.client})` : '';
+    if (deal.closingDate) {
+      evs.push({
+        id: `ev-close-${deal.id}`,
+        title: `CLOSING — ${addr}${client}`,
+        date: fmtDate(deal.closingDate),
+        rawDate: deal.closingDate,
+        time: '10:00 AM',
+        color: 'closing', biz: 'in',
+        type: 'Closing Date', tx: addr,
+        unmovable: true, extra: daysTag(deal.closingDate),
+      });
+    }
+    if (deal.inspectionDate) {
+      evs.push({
+        id: `ev-insp-${deal.id}`,
+        title: `INSPECTION DEADLINE — ${addr}`,
+        date: fmtDate(deal.inspectionDate),
+        rawDate: deal.inspectionDate,
+        time: '5:00 PM',
+        color: 'inspection', biz: 'in',
+        type: 'Inspection Contingency', tx: addr,
+        unmovable: false, extra: daysTag(deal.inspectionDate),
+      });
+    }
+  });
+  // Sort chronologically — soonest first, no-date last
+  evs.sort((a, b) => {
+    if (!a.rawDate && !b.rawDate) return 0;
+    if (!a.rawDate) return 1;
+    if (!b.rawDate) return -1;
+    return new Date(a.rawDate) - new Date(b.rawDate);
+  });
+  return evs;
+}
+
+// ── DEMO FALLBACK ───────────────────────────────────────────────
+const DEMO_EVENTS = [
+  { id:'e1',  title:'CLOSING — 8812 Oak Ave (Johnson)',  date:'March 21, 2026', rawDate:'2026-03-21', time:'10:00 AM', color:'closing',    biz:'in', type:'Closing Date',          tx:'8812 Oak Ave',  unmovable:true,  extra:' · 8d out'  },
+  { id:'e9',  title:'CLOSING — 1140 Ridgeway (Patel)',   date:'April 4, 2026',  rawDate:'2026-04-04', time:'10:00 AM', color:'closing',    biz:'in', type:'Closing Date',          tx:'1140 Ridgeway', unmovable:true,  extra:' · 22d out' },
+  { id:'e3',  title:'INSPECTION DEADLINE — 1140 Ridgeway', date:'March 13, 2026', rawDate:'2026-03-13', time:'5:00 PM', color:'inspection', biz:'in', type:'Inspection Contingency', tx:'1140 Ridgeway', unmovable:false, extra:' · TODAY'   },
+  { id:'e6',  title:'FINAL WALKTHROUGH — 8812 Oak Ave',  date:'March 18, 2026', rawDate:'2026-03-18', time:'11:00 AM', color:'inspection', biz:'in', type:'Walkthrough',            tx:'8812 Oak Ave',  unmovable:false, extra:' · 5d out'  },
+  { id:'e7',  title:'FOLLOW-UP — Marcus Torres',         date:'March 12, 2026', rawDate:'2026-03-12', time:'',         color:'followup',   biz:'in', type:'Follow-up Call',         tx:'Lead pipeline', unmovable:false, extra:' · 1d ago'  },
+  { id:'e8',  title:'FOLLOW-UP — Priya Nair',            date:'March 11, 2026', rawDate:'2026-03-11', time:'',         color:'followup',   biz:'in', type:'Follow-up Call',         tx:'Lead pipeline', unmovable:false, extra:' · 2d ago'  },
+  { id:'e10', title:'LENDER LUNCH — Jake Moretti',       date:'March 14, 2026', rawDate:'2026-03-14', time:'12:30 PM', color:'personal',   biz:'on', type:'Networking',             tx:'Referral partner', unmovable:false, extra:' · 1d out' },
+  { id:'e11', title:'BOARD OF REALTORS TRAINING',        date:'March 19, 2026', rawDate:'2026-03-19', time:'9:00 AM',  color:'personal',   biz:'on', type:'Training',               tx:'NAR CE Credits', unmovable:false, extra:' · 6d out' },
+];
+
+// ── LOAD ────────────────────────────────────────────────────────
+function loadAllEvents() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const deals = JSON.parse(raw);
+      if (Array.isArray(deals) && deals.length > 0) {
+        return { events: buildEventsFromDeals(deals), isDemo: false };
+      }
+    }
+  } catch (e) { console.warn('[calendar] parse error:', e); }
+  return { events: DEMO_EVENTS, isDemo: true };
+}
+
+let { events: EVENTS, isDemo } = loadAllEvents();
+let currentFilter = 'all';
+const addedSet = new Set();
+
+// ── AI STRIP ────────────────────────────────────────────────────
+(function updateAIStrip() {
+  const strip = document.querySelector('.ai-strip-text');
+  if (!strip) return;
+  if (isDemo) {
+    strip.innerHTML = '<strong>Demo mode.</strong> Add your real deals in the <a href="transaction-dashboard.html" style="color:var(--active);text-decoration:none;">Transaction Dashboard</a> — closing and inspection dates will appear here automatically.';
+    return;
+  }
+  const upcomingClosings = EVENTS.filter(e => e.color === 'closing' && e.rawDate && getDaysUntil(e.rawDate) >= 0 && getDaysUntil(e.rawDate) <= 30);
+  const upcomingInspections = EVENTS.filter(e => e.color === 'inspection' && e.rawDate && getDaysUntil(e.rawDate) >= 0 && getDaysUntil(e.rawDate) <= 14);
+  const parts = [];
+  if (upcomingClosings.length) parts.push(`<strong>${upcomingClosings.length} closing${upcomingClosings.length > 1 ? 's' : ''} in the next 30 days</strong>`);
+  if (upcomingInspections.length) parts.push(`<strong>${upcomingInspections.length} inspection deadline${upcomingInspections.length > 1 ? 's' : ''} this week</strong>`);
+  strip.innerHTML = parts.length
+    ? parts.join(' and ') + ' — sync to your calendar before anything slips.'
+    : 'No urgent deadlines in the next 30 days. <strong>Good time to prospect.</strong>';
+})();
+
+// ── RENDER ──────────────────────────────────────────────────────
+function getStripeColor(c) {
+  return ({ closing:'var(--closing)', inspection:'var(--inspection)', followup:'var(--followup)', personal:'var(--personal)' })[c] || 'var(--border)';
+}
+
+function renderEvents() {
+  const visible = currentFilter === 'all' ? EVENTS : EVENTS.filter(e => e.biz === currentFilter);
+  const el = document.getElementById('events-list');
+
+  if (!visible.length) {
+    const msg = isDemo
+      ? 'NO EVENTS IN THIS CATEGORY'
+      : 'NO EVENTS — add closing or inspection dates to your deals in the Transaction Dashboard.';
+    el.innerHTML = `<div style="padding:32px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-tertiary);">${msg}</div>`;
+    updateSyncCount();
+    return;
+  }
+
+  el.innerHTML = visible.map(e => {
+    const bizBadge = e.biz === 'in'
+      ? `<span class="badge badge-in">IN BUSINESS</span>`
+      : `<span class="badge badge-on">ON BUSINESS</span>`;
+    const unmovBadge = e.unmovable ? `<span class="badge badge-unmovable">UNMOVABLE</span>` : '';
+    const isAdded = addedSet.has(e.id);
+    const dateStr = e.date ? `${e.date}${e.extra || ''}${e.time ? ' · ' + e.time : ''}` : '—';
+    return `
+    <div class="event-row" data-biz="${e.biz}">
+      <div class="event-stripe" style="background:${getStripeColor(e.color)};opacity:0.7;"></div>
+      <div class="event-body">
+        <div class="event-header">
+          <p class="event-title">${e.title}</p>
+          <div class="event-badges">${bizBadge}${unmovBadge}</div>
+        </div>
+        <p class="event-meta">${dateStr} · ${e.type} · ${e.tx}</p>
+      </div>
+      <div class="event-action">
+        <button class="btn-add${isAdded ? ' added' : ''}" id="add-${e.id}" onclick="addEvent('${e.id}')" ${isAdded ? 'disabled' : ''}>${isAdded ? 'ADDED ✓' : 'ADD'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterEvents(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.biz-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents();
+}
+
+// ── OAUTH ───────────────────────────────────────────────────────
+function connectCalendar(provider) {
+  if (provider === 'gcal')    window.location.href = '/api/auth/google';
+  else if (provider === 'outlook') window.location.href = '/api/auth/microsoft';
+}
+
+(function checkAuthReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const authResult   = params.get('auth');
+  const authProvider = params.get('provider');
+  if (!authResult) return;
+  window.history.replaceState({}, '', window.location.pathname);
+  if (authResult === 'success') {
+    const btnId = authProvider === 'google' ? 'btn-gcal' : 'btn-outlook';
+    const label = authProvider === 'google' ? '✓ GOOGLE CONNECTED' : '✓ OUTLOOK CONNECTED';
+    const btn = document.getElementById(btnId);
+    if (btn) { btn.textContent = label; btn.classList.add('connected'); btn.disabled = true; }
+    localStorage.setItem(`meridian_${authProvider}_connected`, '1');
+  } else {
+    console.warn(`[calendar] OAuth failed — provider: ${authProvider}, reason: ${params.get('reason') || 'unknown'}`);
+  }
+})();
+
+(function restoreConnectedState() {
+  if (localStorage.getItem('meridian_google_connected')) {
+    const btn = document.getElementById('btn-gcal');
+    if (btn) { btn.textContent = '✓ GOOGLE CONNECTED'; btn.classList.add('connected'); btn.disabled = true; }
+  }
+  if (localStorage.getItem('meridian_microsoft_connected')) {
+    const btn = document.getElementById('btn-outlook');
+    if (btn) { btn.textContent = '✓ OUTLOOK CONNECTED'; btn.classList.add('connected'); btn.disabled = true; }
+  }
+})();
+
+// ── ADD / SYNC ──────────────────────────────────────────────────
+function addEvent(id) {
+  addedSet.add(id);
+  const btn = document.getElementById('add-' + id);
+  if (btn) { btn.textContent = 'ADDED ✓'; btn.classList.add('added'); btn.disabled = true; }
+  updateSyncCount();
+}
+
+function updateSyncCount() {
+  const total = EVENTS.length;
+  const rem   = total - addedSet.size;
+  document.getElementById('sync-count').textContent = rem > 0
+    ? `${rem} event${rem !== 1 ? 's' : ''} ready`
+    : 'All synced ✓';
+}
+
+function syncAll() {
+  EVENTS.forEach((e, i) => setTimeout(() => addEvent(e.id), i * 80));
+}
+
+// ── LIVE RELOAD when Transaction Dashboard saves new deals ──────
+window.addEventListener('meridian_deals_updated', () => {
+  const loaded = loadAllEvents();
+  EVENTS = loaded.events;
+  isDemo = loaded.isDemo;
+  addedSet.clear();
+  renderEvents();
+  updateSyncCount();
+});
+
+renderEvents();
+updateSyncCount();
+</script>
+</body>
+</html>
