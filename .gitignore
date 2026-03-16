@@ -19,3 +19,6 @@ npm-debug.log*
 
 # Archive folder (keep files, exclude from Vercel build)
 _archive/
+
+# Claude Code internal files
+.claude/
